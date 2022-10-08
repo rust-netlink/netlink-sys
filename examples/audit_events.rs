@@ -16,11 +16,7 @@
 use std::process;
 
 use netlink_packet_audit::{
-    AuditMessage,
-    NetlinkBuffer,
-    NetlinkMessage,
-    StatusMessage,
-    NLM_F_ACK,
+    AuditMessage, NetlinkBuffer, NetlinkMessage, StatusMessage, NLM_F_ACK,
     NLM_F_REQUEST,
 };
 
@@ -61,7 +57,8 @@ fn main() {
                 nl_buf.set_length(n as u32);
             }
         }
-        let parsed = NetlinkMessage::<AuditMessage>::deserialize(&buf[0..n]).unwrap();
+        let parsed =
+            NetlinkMessage::<AuditMessage>::deserialize(&buf[0..n]).unwrap();
         println!("<<< {:?}", parsed);
     }
 }

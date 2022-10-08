@@ -32,7 +32,10 @@ pub trait AsyncSocketExt: AsyncSocket {
     }
 
     /// `async fn recv<B>(&mut self, buf: &mut [u8]) -> io::Result<()>`
-    fn recv<'a, 'b, B>(&'a mut self, buf: &'b mut B) -> PollRecv<'a, 'b, Self, B>
+    fn recv<'a, 'b, B>(
+        &'a mut self,
+        buf: &'b mut B,
+    ) -> PollRecv<'a, 'b, Self, B>
     where
         B: bytes::BufMut,
     {
@@ -40,14 +43,18 @@ pub trait AsyncSocketExt: AsyncSocket {
     }
 
     /// `async fn recv<B>(&mut self, buf: &mut [u8]) -> io::Result<SocketAddr>`
-    fn recv_from<'a, 'b, B>(&'a mut self, buf: &'b mut B) -> PollRecvFrom<'a, 'b, Self, B>
+    fn recv_from<'a, 'b, B>(
+        &'a mut self,
+        buf: &'b mut B,
+    ) -> PollRecvFrom<'a, 'b, Self, B>
     where
         B: bytes::BufMut,
     {
         PollRecvFrom { socket: self, buf }
     }
 
-    /// `async fn recrecv_from_full(&mut self) -> io::Result<(Vec<u8>, SocketAddr)>`
+    /// `async fn recrecv_from_full(&mut self) -> io::Result<(Vec<u8>,
+    /// SocketAddr)>`
     fn recv_from_full(&mut self) -> PollRecvFromFull<'_, Self> {
         PollRecvFromFull { socket: self }
     }

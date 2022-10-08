@@ -8,22 +8,28 @@ use std::{
 
 /// The address of a netlink socket
 ///
-/// A netlink address is made of two parts: the unicast address of the socket, called _port number_ or _PID_, and the
-/// multicast address called _group ID_. In this library, we've chosen to stick to the "port number" terminology, since
-/// PID can be confused with process ID. However, the netlink man page mostly uses PID.
+/// A netlink address is made of two parts: the unicast address of the socket,
+/// called _port number_ or _PID_, and the multicast address called _group ID_.
+/// In this library, we've chosen to stick to the "port number" terminology,
+/// since PID can be confused with process ID. However, the netlink man page
+/// mostly uses PID.
 ///
 /// ## Port number
 ///
-/// Sockets in kernel space have 0 as a port number. For sockets opened by a user-space process, the port number can
-/// either be assigned by the process itself, or by the kernel. The only constraint is that this port number must be
-/// unique: two netlink sockets created by a given process must have a different port number. However, netlinks sockets
-/// created by different processes can have the same port number.
+/// Sockets in kernel space have 0 as a port number. For sockets opened by a
+/// user-space process, the port number can either be assigned by the process
+/// itself, or by the kernel. The only constraint is that this port number must
+/// be unique: two netlink sockets created by a given process must have a
+/// different port number. However, netlinks sockets created by different
+/// processes can have the same port number.
 ///
 /// ### Port number assigned by the kernel
 ///
-/// One way to set the port number is to let the kernel assign it, by calling [`Socket::bind`][bind] with a port number set to
-/// 0. The kernel will usually use the process ID as port number for the first netlink socket created by the process,
-/// which is why the socket port number is also called PID. For example:
+/// One way to set the port number is to let the kernel assign it, by calling
+/// [`Socket::bind`][bind] with a port number set to 0. The kernel will usually
+/// use the process ID as port number for the first netlink socket created by
+/// the process, which is why the socket port number is also called PID. For
+/// example:
 ///
 /// ```rust
 /// use std::process;
@@ -49,8 +55,9 @@ use std::{
 /// assert!(addr.port_number() != addr2.port_number());
 /// ```
 ///
-/// Note that it's a little tedious to create a socket address, call `bind` and then retrive the address with
-/// [`Socket::get_address`][get_addr]. To avoid this boilerplate you can use [`Socket::bind_auto`][bind_auto]:
+/// Note that it's a little tedious to create a socket address, call `bind` and
+/// then retrive the address with [`Socket::get_address`][get_addr]. To avoid
+/// this boilerplate you can use [`Socket::bind_auto`][bind_auto]:
 ///
 /// ```rust
 /// use netlink_sys::{protocols::NETLINK_ROUTE, Socket, SocketAddr};
@@ -63,8 +70,9 @@ use std::{
 ///
 /// ### Setting the port number manually
 ///
-/// The application can also pick the port number by calling Socket::bind with an address with a non-zero port
-/// number. However, it must ensure that this number is unique for each socket created. For instance:
+/// The application can also pick the port number by calling Socket::bind with
+/// an address with a non-zero port number. However, it must ensure that this
+/// number is unique for each socket created. For instance:
 ///
 /// ```rust
 /// use netlink_sys::{protocols::NETLINK_ROUTE, Socket, SocketAddr};
@@ -149,29 +157,36 @@ impl SocketAddr {
     }
 
     pub(crate) fn as_raw(&self) -> (*const libc::sockaddr, libc::socklen_t) {
-        let addr_ptr = &self.0 as *const libc::sockaddr_nl as *const libc::sockaddr;
-        //             \                                 / \                      /
-        //              +---------------+---------------+   +----------+---------+
-        //                               |                             |
-        //                               v                             |
-        //             create a raw pointer to the sockaddr_nl         |
-        //                                                             v
-        //                                                cast *sockaddr_nl -> *sockaddr
+        let addr_ptr =
+            &self.0 as *const libc::sockaddr_nl as *const libc::sockaddr;
+        //             \                                 / \
+        // /              +---------------+---------------+
+        // +----------+---------+                               |
+        // |                               v
+        // |             create a raw pointer to the sockaddr_nl
+        // |
+        // v                                                cast
+        // *sockaddr_nl -> *sockaddr
         //
-        // This kind of things seems to be pretty usual when using C APIs from Rust. It could be
-        // written in a shorter way thank to type inference:
+        // This kind of things seems to be pretty usual when using C APIs from
+        // Rust. It could be written in a shorter way thank to type
+        // inference:
         //
-        //      let addr_ptr: *const libc:sockaddr = &self.0 as *const _ as *const _;
+        //      let addr_ptr: *const libc:sockaddr = &self.0 as *const _ as
+        // *const _;
         //
-        // But since this is my first time dealing with this kind of things I chose the most
-        // explicit form.
+        // But since this is my first time dealing with this kind of things I
+        // chose the most explicit form.
 
         let addr_len = mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t;
         (addr_ptr, addr_len)
     }
 
-    pub(crate) fn as_raw_mut(&mut self) -> (*mut libc::sockaddr, libc::socklen_t) {
-        let addr_ptr = &mut self.0 as *mut libc::sockaddr_nl as *mut libc::sockaddr;
+    pub(crate) fn as_raw_mut(
+        &mut self,
+    ) -> (*mut libc::sockaddr, libc::socklen_t) {
+        let addr_ptr =
+            &mut self.0 as *mut libc::sockaddr_nl as *mut libc::sockaddr;
         let addr_len = mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t;
         (addr_ptr, addr_len)
     }
