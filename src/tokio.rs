@@ -45,7 +45,11 @@ impl AsyncSocket for TokioSocket {
         Ok(Self(AsyncFd::new(socket)?))
     }
 
-    fn poll_send(&mut self, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_send(
+        &mut self,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
         loop {
             // Check if the socket it writable. If
             // AsyncFd::poll_write_ready returns NotReady, it will
@@ -77,7 +81,11 @@ impl AsyncSocket for TokioSocket {
         }
     }
 
-    fn poll_recv<B>(&mut self, cx: &mut Context<'_>, buf: &mut B) -> Poll<io::Result<()>>
+    fn poll_recv<B>(
+        &mut self,
+        cx: &mut Context<'_>,
+        buf: &mut B,
+    ) -> Poll<io::Result<()>>
     where
         B: bytes::BufMut,
     {

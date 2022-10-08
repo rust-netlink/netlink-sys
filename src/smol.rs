@@ -35,7 +35,11 @@ impl AsRawFd for SmolSocket {
 // and only register context if it would block.
 // replicate this in these poll functions:
 impl SmolSocket {
-    fn poll_write_with<F, R>(&mut self, cx: &mut Context<'_>, mut op: F) -> Poll<io::Result<R>>
+    fn poll_write_with<F, R>(
+        &mut self,
+        cx: &mut Context<'_>,
+        mut op: F,
+    ) -> Poll<io::Result<R>>
     where
         F: FnMut(&mut Self) -> io::Result<R>,
     {
@@ -49,7 +53,11 @@ impl SmolSocket {
         }
     }
 
-    fn poll_read_with<F, R>(&mut self, cx: &mut Context<'_>, mut op: F) -> Poll<io::Result<R>>
+    fn poll_read_with<F, R>(
+        &mut self,
+        cx: &mut Context<'_>,
+        mut op: F,
+    ) -> Poll<io::Result<R>>
     where
         F: FnMut(&mut Self) -> io::Result<R>,
     {
@@ -79,7 +87,11 @@ impl AsyncSocket for SmolSocket {
         Ok(Self(Async::new(socket)?))
     }
 
-    fn poll_send(&mut self, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_send(
+        &mut self,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
         self.poll_write_with(cx, |this| this.0.get_mut().send(buf, 0))
     }
 
@@ -92,11 +104,17 @@ impl AsyncSocket for SmolSocket {
         self.poll_write_with(cx, |this| this.0.get_mut().send_to(buf, addr, 0))
     }
 
-    fn poll_recv<B>(&mut self, cx: &mut Context<'_>, buf: &mut B) -> Poll<io::Result<()>>
+    fn poll_recv<B>(
+        &mut self,
+        cx: &mut Context<'_>,
+        buf: &mut B,
+    ) -> Poll<io::Result<()>>
     where
         B: bytes::BufMut,
     {
-        self.poll_read_with(cx, |this| this.0.get_mut().recv(buf, 0).map(|_len| ()))
+        self.poll_read_with(cx, |this| {
+            this.0.get_mut().recv(buf, 0).map(|_len| ())
+        })
     }
 
     fn poll_recv_from<B>(

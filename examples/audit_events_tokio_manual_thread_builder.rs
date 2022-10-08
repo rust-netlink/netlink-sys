@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 /*
- * This example shows the mimimal manual tokio initialization required to be able
- * to use netlink.
+ * This example shows the mimimal manual tokio initialization required to be
+ * able to use netlink.
  */
 
 use netlink_sys::{protocols::NETLINK_AUDIT, AsyncSocket, TokioSocket};
