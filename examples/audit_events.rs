@@ -59,6 +59,6 @@ fn main() {
         }
         let parsed =
             NetlinkMessage::<AuditMessage>::deserialize(&buf[0..n]).unwrap();
-        println!("<<< {:?}", parsed);
+        println!("<<< {parsed:?}");
     }
 }
