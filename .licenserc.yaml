@@ -11,5 +11,7 @@ header:
     - 'CHANGELOG'
     - 'LICENSE-MIT'
     - '.gitignore'
+    - '.packit.yaml'
+    - 'fedora/*.spec'
 
   comment: on-failure
