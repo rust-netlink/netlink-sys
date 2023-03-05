@@ -3,7 +3,7 @@ specfile_path: fedora/rust-netlink-sys.spec
 downstream_package_name: rust-netlink-sys
 upstream_project_url: https://github.com/rust-netlink/netlink-sys
 issue_repository: https://github.com/rust-netlink/netlink-sys
-
+update_release: false
 upstream_package_name: netlink-sys
 upstream_tag_template: v{version}
 copy_upstream_release_description: true
