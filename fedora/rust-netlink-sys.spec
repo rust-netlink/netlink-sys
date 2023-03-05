@@ -5,7 +5,7 @@
 %global crate netlink-sys
 
 Name:           rust-%{crate}
-Version:        0.8.4
+Version:        0.8.5
 Release:        %autorelease
 Summary:        Netlink sockets, with optional integration with tokio
 
