@@ -112,17 +112,13 @@ impl AsyncSocket for TokioSocket {
         B: bytes::BufMut,
     {
         loop {
-            trace!("poll_recv_from called");
             let mut guard = ready!(self.0.poll_read_ready(cx))?;
-            trace!("poll_recv_from socket is ready for reading");
 
             match guard.try_io(|inner| inner.get_ref().recv_from(buf, 0)) {
                 Ok(x) => {
-                    trace!("poll_recv_from {:?} bytes read", x);
                     return Poll::Ready(x.map(|(_len, addr)| addr));
                 }
                 Err(_would_block) => {
-                    trace!("poll_recv_from socket would block");
                     continue;
                 }
             }
@@ -134,17 +130,13 @@ impl AsyncSocket for TokioSocket {
         cx: &mut Context<'_>,
     ) -> Poll<io::Result<(Vec<u8>, SocketAddr)>> {
         loop {
-            trace!("poll_recv_from_full called");
             let mut guard = ready!(self.0.poll_read_ready(cx))?;
-            trace!("poll_recv_from_full socket is ready for reading");
 
             match guard.try_io(|inner| inner.get_ref().recv_from_full()) {
                 Ok(x) => {
-                    trace!("poll_recv_from_full {:?} bytes read", x);
                     return Poll::Ready(x);
                 }
                 Err(_would_block) => {
-                    trace!("poll_recv_from_full socket would block");
                     continue;
                 }
             }
