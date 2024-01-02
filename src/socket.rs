@@ -509,6 +509,22 @@ impl Socket {
         )?;
         Ok(res == 1)
     }
+
+    /// `NETLINK_EXT_ACK`
+    /// Extended ACK controls reporting of additional error/warning TLVs in NLMSG_ERROR and NLMSG_DONE messages.
+    pub fn set_ext_ack(&mut self, value: bool) -> Result<()> {
+        let value: libc::c_int = value.into();
+        setsockopt(self.0, libc::SOL_NETLINK, libc::NETLINK_EXT_ACK, value)
+    }
+
+    pub fn get_ext_ack(&self) -> Result<bool> {
+        let res = getsockopt::<libc::c_int>(
+            self.0,
+            libc::SOL_NETLINK,
+            libc::NETLINK_EXT_ACK,
+        )?;
+        Ok(res == 1)
+    }
 }
 
 /// Wrapper around `getsockopt`:
