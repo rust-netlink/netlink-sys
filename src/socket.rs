@@ -530,8 +530,8 @@ impl Socket {
     /// Sets socket receive buffer in bytes.
     /// The kernel doubles this value (to allow space for bookkeeping overhead),
     /// and this doubled value is returned by [get_rx_buf_sz].(see socket(7)
-    /// The default value is set by the proc/sys/net/core/rmem_default file, and the maximum
-    /// allowed value is set by the /proc/sys/net/core/rmem_max
+    /// The default value is set by the proc/sys/net/core/rmem_default file, and
+    /// the maximum allowed value is set by the /proc/sys/net/core/rmem_max
     /// file. The minimum (doubled) value for this option is 256.
     pub fn set_rx_buf_sz<T>(&self, size: T) -> Result<()> {
         setsockopt(self.0, libc::SOL_SOCKET, libc::SO_RCVBUF, size)
