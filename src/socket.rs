@@ -546,6 +546,18 @@ impl Socket {
         )?;
         Ok(res as usize)
     }
+
+    /// Set strict input checking(`NETLINK_GET_STRICT_CHK`) in netlink route
+    /// protocol. By default, `NETLINK_GET_STRICT_CHK` is not enabled.
+    pub fn set_netlink_get_strict_chk(&self, value: bool) -> Result<()> {
+        let value: u32 = value.into();
+        setsockopt(
+            self.0,
+            libc::SOL_NETLINK,
+            libc::NETLINK_GET_STRICT_CHK,
+            value,
+        )
+    }
 }
 
 /// Wrapper around `getsockopt`:
