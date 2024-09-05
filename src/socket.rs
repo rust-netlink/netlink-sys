@@ -159,7 +159,6 @@ impl Socket {
     /// use std::process;
     ///
     /// let mut socket = Socket::new(NETLINK_ROUTE).unwrap();
-    /// let _ = socket.bind_auto().unwrap();
     /// let kernel_addr = SocketAddr::new(0, 0);
     /// socket.connect(&kernel_addr).unwrap();
     /// // This is a valid message for listing the network links on the system
