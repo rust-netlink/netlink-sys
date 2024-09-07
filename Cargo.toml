@@ -28,7 +28,7 @@ features = ["net"]
 
 [dependencies.mio]
 optional = true
-version = "0.8"
+version = "1.0"
 features = ["os-poll", "os-ext"]
 
 [dependencies.async-io]
@@ -51,7 +51,7 @@ default-features = false
 features = ["net", "macros", "rt-multi-thread"]
 
 [dev-dependencies.async-std]
-version = "1.9.0"
+version = "1.13"
 features = ["attributes"]
 
 
