@@ -33,13 +33,13 @@ features = ["os-poll", "os-ext"]
 
 [dependencies.async-io]
 optional = true
-version = "1.13"
+version = "2"
 
 [features]
 default = []
 mio_socket = ["mio"]
 tokio_socket = ["tokio", "futures"]
-smol_socket = ["async-io","futures"]
+smol_socket = ["async-io", "futures"]
 
 [dev-dependencies]
 netlink-packet-audit = "0.4.1"
