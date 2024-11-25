@@ -2,7 +2,7 @@
 
 use std::{
     io,
-    os::unix::io::{AsRawFd, FromRawFd, RawFd},
+    os::unix::io::{AsFd, AsRawFd, BorrowedFd, FromRawFd, RawFd},
     task::{Context, Poll},
 };
 
@@ -28,6 +28,12 @@ impl FromRawFd for SmolSocket {
 impl AsRawFd for SmolSocket {
     fn as_raw_fd(&self) -> RawFd {
         self.0.get_ref().as_raw_fd()
+    }
+}
+
+impl AsFd for SmolSocket {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.0.get_ref().as_fd()
     }
 }
 
@@ -79,7 +85,7 @@ impl AsyncSocket for SmolSocket {
 
     /// Mutable access to underyling [`Socket`]
     fn socket_mut(&mut self) -> &mut Socket {
-        self.0.get_mut()
+        unsafe { self.0.get_mut() }
     }
 
     fn new(protocol: isize) -> io::Result<Self> {
@@ -92,7 +98,7 @@ impl AsyncSocket for SmolSocket {
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
-        self.poll_write_with(cx, |this| this.0.get_mut().send(buf, 0))
+        self.poll_write_with(cx, |this| this.socket_mut().send(buf, 0))
     }
 
     fn poll_send_to(
@@ -101,7 +107,7 @@ impl AsyncSocket for SmolSocket {
         buf: &[u8],
         addr: &SocketAddr,
     ) -> Poll<io::Result<usize>> {
-        self.poll_write_with(cx, |this| this.0.get_mut().send_to(buf, addr, 0))
+        self.poll_write_with(cx, |this| this.socket_mut().send_to(buf, addr, 0))
     }
 
     fn poll_recv<B>(
@@ -113,7 +119,7 @@ impl AsyncSocket for SmolSocket {
         B: bytes::BufMut,
     {
         self.poll_read_with(cx, |this| {
-            this.0.get_mut().recv(buf, 0).map(|_len| ())
+            this.socket_mut().recv(buf, 0).map(|_len| ())
         })
     }
 
@@ -126,7 +132,7 @@ impl AsyncSocket for SmolSocket {
         B: bytes::BufMut,
     {
         self.poll_read_with(cx, |this| {
-            let x = this.0.get_mut().recv_from(buf, 0);
+            let x = this.socket_mut().recv_from(buf, 0);
             trace!("poll_recv_from: {:?}", x);
             x.map(|(_len, addr)| addr)
         })
@@ -136,6 +142,6 @@ impl AsyncSocket for SmolSocket {
         &mut self,
         cx: &mut Context<'_>,
     ) -> Poll<io::Result<(Vec<u8>, SocketAddr)>> {
-        self.poll_read_with(cx, |this| this.0.get_mut().recv_from_full())
+        self.poll_read_with(cx, |this| this.socket_mut().recv_from_full())
     }
 }
