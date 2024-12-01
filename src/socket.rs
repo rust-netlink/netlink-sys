@@ -164,7 +164,7 @@ impl Socket {
     /// 2. connect it to the kernel with [`Socket::connect`]
     /// 3. send a request to the kernel with [`Socket::send`]
     /// 4. read the response (which can span over several messages)
-    ///     [`Socket::recv`]
+    ///    [`Socket::recv`]
     ///
     /// ```rust
     /// use netlink_sys::{protocols::NETLINK_ROUTE, Socket, SocketAddr};
