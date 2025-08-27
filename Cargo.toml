@@ -2,7 +2,7 @@
 authors = ["Corentin Henry <corentinhenry@gmail.com>"]
 name = "netlink-sys"
 version = "0.8.7"
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/rust-netlink/netlink-sys"
 keywords = ["netlink", "ip", "linux"]
 license = "MIT"
@@ -42,7 +42,8 @@ tokio_socket = ["tokio", "futures"]
 smol_socket = ["async-io", "futures"]
 
 [dev-dependencies]
-netlink-packet-audit = "0.4.1"
+netlink-packet-audit = "0.6.1"
+netlink-packet-core = "0.8.0"
 
 [dev-dependencies.tokio]
 version = "1.0.1"
