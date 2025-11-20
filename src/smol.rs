@@ -8,7 +8,7 @@ use std::{
 
 use async_io::Async;
 
-use futures::ready;
+use futures_util::ready;
 
 use log::trace;
 

@@ -6,7 +6,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures::ready;
+use futures_util::ready;
 use log::trace;
 use tokio::io::unix::AsyncFd;
 
