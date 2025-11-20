@@ -15,7 +15,7 @@ bytes = "1.8"
 libc = "0.2.164"
 log = "0.4.8"
 
-[dependencies.futures]
+[dependencies.futures-util]
 optional = true
 version = "0.3.31"
 
@@ -38,8 +38,8 @@ version = "2"
 [features]
 default = []
 mio_socket = ["mio"]
-tokio_socket = ["tokio", "futures"]
-smol_socket = ["async-io", "futures"]
+tokio_socket = ["tokio", "futures-util"]
+smol_socket = ["async-io", "futures-util"]
 
 [dev-dependencies]
 netlink-packet-audit = "0.6.1"
