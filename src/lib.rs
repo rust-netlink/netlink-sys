@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-//! Netlink sockets for Linux.
+//! Netlink sockets for Linux and FreeBSD.
 //!
 //! This crate provides a low-level [`Socket`] type for communicating over
 //! netlink, along with optional async integrations:
@@ -15,6 +15,9 @@
 //! [`Socket::new`](crate::Socket::new).
 
 #![deny(missing_docs)]
+
+mod constants;
+mod sys;
 
 mod socket;
 pub use self::socket::Socket;

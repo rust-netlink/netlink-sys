@@ -37,6 +37,7 @@ impl Source for Socket {
 
 #[cfg(target_endian = "little")]
 #[cfg(test)]
+#[cfg(not(target_os = "freebsd"))]
 mod tests {
     use super::*;
 
