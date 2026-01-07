@@ -6,6 +6,8 @@ use std::{
     mem,
 };
 
+use crate::{constants::PF_NETLINK, sys::sockaddr_nl};
+
 /// The address of a netlink socket
 ///
 /// A netlink address is made of two parts: the unicast address of the socket,
@@ -93,7 +95,7 @@ use std::{
 /// [bind_auto]: crate::Socket::bind_auto
 /// [get_addr]: crate::Socket::get_address
 #[derive(Copy, Clone)]
-pub struct SocketAddr(pub(crate) libc::sockaddr_nl);
+pub struct SocketAddr(pub(crate) sockaddr_nl);
 
 impl Hash for SocketAddr {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -140,8 +142,8 @@ impl SocketAddr {
         // SAFETY: `sockaddr_nl` is a plain C struct made only of integers and
         // an all-zero bit pattern is a valid value. All fields are overwritten
         // below.
-        let mut addr: libc::sockaddr_nl = unsafe { mem::zeroed() };
-        addr.nl_family = libc::PF_NETLINK as libc::sa_family_t;
+        let mut addr: sockaddr_nl = unsafe { mem::zeroed() };
+        addr.nl_family = PF_NETLINK as libc::sa_family_t;
         addr.nl_pid = port_number;
         addr.nl_groups = multicast_groups;
         SocketAddr(addr)
@@ -158,8 +160,7 @@ impl SocketAddr {
     }
 
     pub(crate) fn as_raw(&self) -> (*const libc::sockaddr, libc::socklen_t) {
-        let addr_ptr =
-            &self.0 as *const libc::sockaddr_nl as *const libc::sockaddr;
+        let addr_ptr = &self.0 as *const sockaddr_nl as *const libc::sockaddr;
         //             \                                 / \
         // /              +---------------+---------------+
         // +----------+---------+                               |
@@ -179,16 +180,15 @@ impl SocketAddr {
         // But since this is my first time dealing with this kind of things I
         // chose the most explicit form.
 
-        let addr_len = mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t;
+        let addr_len = mem::size_of::<sockaddr_nl>() as libc::socklen_t;
         (addr_ptr, addr_len)
     }
 
     pub(crate) fn as_raw_mut(
         &mut self,
     ) -> (*mut libc::sockaddr, libc::socklen_t) {
-        let addr_ptr =
-            &mut self.0 as *mut libc::sockaddr_nl as *mut libc::sockaddr;
-        let addr_len = mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t;
+        let addr_ptr = &mut self.0 as *mut sockaddr_nl as *mut libc::sockaddr;
+        let addr_len = mem::size_of::<sockaddr_nl>() as libc::socklen_t;
         (addr_ptr, addr_len)
     }
 }
