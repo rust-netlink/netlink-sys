@@ -9,7 +9,16 @@ use std::{
     },
 };
 
-use crate::SocketAddr;
+use crate::{
+    constants::{
+        NETLINK_ADD_MEMBERSHIP, NETLINK_BROADCAST_ERROR, NETLINK_CAP_ACK,
+        NETLINK_DROP_MEMBERSHIP, NETLINK_EXT_ACK, NETLINK_GET_STRICT_CHK,
+        NETLINK_LISTEN_ALL_NSID, NETLINK_NO_ENOBUFS, NETLINK_PKTINFO,
+        PF_NETLINK, SOL_NETLINK,
+    },
+    sys::sockaddr_nl,
+    SocketAddr,
+};
 
 /// A netlink socket.
 ///
@@ -89,7 +98,7 @@ impl Socket {
     pub fn new(protocol: isize) -> Result<Self> {
         let res = unsafe {
             libc::socket(
-                libc::PF_NETLINK,
+                PF_NETLINK as _,
                 libc::SOCK_DGRAM | libc::SOCK_CLOEXEC,
                 protocol as libc::c_int,
             )
@@ -196,6 +205,7 @@ impl Socket {
     ///     }
     /// }
     /// ```
+    #[cfg(not(target_os = "freebsd"))]
     pub fn connect(&self, remote_addr: &SocketAddr) -> Result<()> {
         // FIXME:
         //
@@ -261,7 +271,7 @@ impl Socket {
         // library create a sockaddr_storage so that it works for any
         // address family, but here, we already know that we'll have a
         // Netlink address, so we can create the appropriate storage.
-        let mut addr = unsafe { mem::zeroed::<libc::sockaddr_nl>() };
+        let mut addr = unsafe { mem::zeroed::<sockaddr_nl>() };
 
         // recvfrom takes a *sockaddr as parameter so that it can accept any
         // kind of address storage, so we need to create such a pointer
@@ -276,8 +286,7 @@ impl Socket {
         // +--------------+---------------+    +---------+--------+
         //                 /                                \  /
         // \
-        let addr_ptr =
-            &mut addr as *mut libc::sockaddr_nl as *mut libc::sockaddr;
+        let addr_ptr = &mut addr as *mut sockaddr_nl as *mut libc::sockaddr;
 
         // Why do we need to pass the address length? We're passing a generic
         // *sockaddr to recvfrom. Somehow recvfrom needs to make sure
@@ -414,8 +423,8 @@ impl Socket {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_PKTINFO,
+            SOL_NETLINK as _,
+            NETLINK_PKTINFO as _,
             value,
         )
     }
@@ -423,8 +432,8 @@ impl Socket {
     pub fn get_pktinfo(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_PKTINFO,
+            SOL_NETLINK as _,
+            NETLINK_PKTINFO as _,
         )?;
         Ok(res == 1)
     }
@@ -432,8 +441,8 @@ impl Socket {
     pub fn add_membership(&mut self, group: u32) -> Result<()> {
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_ADD_MEMBERSHIP,
+            SOL_NETLINK as _,
+            NETLINK_ADD_MEMBERSHIP as _,
             group,
         )
     }
@@ -441,8 +450,8 @@ impl Socket {
     pub fn drop_membership(&mut self, group: u32) -> Result<()> {
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_DROP_MEMBERSHIP,
+            SOL_NETLINK as _,
+            NETLINK_DROP_MEMBERSHIP as _,
             group,
         )
     }
@@ -457,42 +466,46 @@ impl Socket {
     /// `NETLINK_BROADCAST_ERROR` (since Linux 2.6.30). When not set,
     /// `netlink_broadcast()` only reports `ESRCH` errors and silently
     /// ignore `NOBUFS` errors.
+    #[cfg(not(target_os = "freebsd"))]
     pub fn set_broadcast_error(&mut self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_BROADCAST_ERROR,
+            SOL_NETLINK as _,
+            NETLINK_BROADCAST_ERROR as _,
             value,
         )
     }
 
+    #[cfg(not(target_os = "freebsd"))]
     pub fn get_broadcast_error(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_BROADCAST_ERROR,
+            SOL_NETLINK as _,
+            NETLINK_BROADCAST_ERROR as _,
         )?;
         Ok(res == 1)
     }
 
     /// `NETLINK_NO_ENOBUFS` (since Linux 2.6.30). This flag can be used by
     /// unicast and broadcast listeners to avoid receiving `ENOBUFS` errors.
+    #[cfg(not(target_os = "freebsd"))]
     pub fn set_no_enobufs(&mut self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_NO_ENOBUFS,
+            SOL_NETLINK as _,
+            NETLINK_NO_ENOBUFS as _,
             value,
         )
     }
 
+    #[cfg(not(target_os = "freebsd"))]
     pub fn get_no_enobufs(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_NO_ENOBUFS,
+            SOL_NETLINK as _,
+            NETLINK_NO_ENOBUFS as _,
         )?;
         Ok(res == 1)
     }
@@ -506,8 +519,8 @@ impl Socket {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_LISTEN_ALL_NSID,
+            SOL_NETLINK as _,
+            NETLINK_LISTEN_ALL_NSID as _,
             value,
         )
     }
@@ -515,8 +528,8 @@ impl Socket {
     pub fn get_listen_all_namespaces(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_LISTEN_ALL_NSID,
+            SOL_NETLINK as _,
+            NETLINK_LISTEN_ALL_NSID as _,
         )?;
         Ok(res == 1)
     }
@@ -531,8 +544,8 @@ impl Socket {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_CAP_ACK,
+            SOL_NETLINK as _,
+            NETLINK_CAP_ACK as _,
             value,
         )
     }
@@ -540,8 +553,8 @@ impl Socket {
     pub fn get_cap_ack(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_CAP_ACK,
+            SOL_NETLINK as _,
+            NETLINK_CAP_ACK as _,
         )?;
         Ok(res == 1)
     }
@@ -553,8 +566,8 @@ impl Socket {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_EXT_ACK,
+            SOL_NETLINK as _,
+            NETLINK_EXT_ACK as _,
             value,
         )
     }
@@ -562,8 +575,8 @@ impl Socket {
     pub fn get_ext_ack(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_EXT_ACK,
+            SOL_NETLINK as _,
+            NETLINK_EXT_ACK as _,
         )?;
         Ok(res == 1)
     }
@@ -594,8 +607,8 @@ impl Socket {
         let value: u32 = value.into();
         setsockopt(
             self.as_raw_fd(),
-            libc::SOL_NETLINK,
-            libc::NETLINK_GET_STRICT_CHK,
+            SOL_NETLINK as _,
+            NETLINK_GET_STRICT_CHK as _,
             value,
         )
     }
@@ -668,6 +681,7 @@ mod test {
         Socket::new(NETLINK_ROUTE).unwrap();
     }
 
+    #[cfg(not(target_os = "freebsd"))]
     #[test]
     fn connect() {
         let sock = Socket::new(NETLINK_ROUTE).unwrap();
@@ -704,15 +718,18 @@ mod test {
         sock.set_cap_ack(false).unwrap();
         assert!(!sock.get_cap_ack().unwrap());
 
-        sock.set_no_enobufs(true).unwrap();
-        assert!(sock.get_no_enobufs().unwrap());
-        sock.set_no_enobufs(false).unwrap();
-        assert!(!sock.get_no_enobufs().unwrap());
+        #[cfg(not(target_os = "freebsd"))]
+        {
+            sock.set_no_enobufs(true).unwrap();
+            assert!(sock.get_no_enobufs().unwrap());
+            sock.set_no_enobufs(false).unwrap();
+            assert!(!sock.get_no_enobufs().unwrap());
 
-        sock.set_broadcast_error(true).unwrap();
-        assert!(sock.get_broadcast_error().unwrap());
-        sock.set_broadcast_error(false).unwrap();
-        assert!(!sock.get_broadcast_error().unwrap());
+            sock.set_broadcast_error(true).unwrap();
+            assert!(sock.get_broadcast_error().unwrap());
+            sock.set_broadcast_error(false).unwrap();
+            assert!(!sock.get_broadcast_error().unwrap());
+        }
 
         // FIXME: these require root permissions
         // sock.set_listen_all_namespaces(true).unwrap();

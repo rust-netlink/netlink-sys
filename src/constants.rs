@@ -141,3 +141,12 @@ pub const NETLINK_CAP_ACK: int = 10;
 pub const NETLINK_EXT_ACK: int = 11;
 pub const NL_MMAP_MSG_ALIGNMENT: int = 4;
 pub const NET_MAJOR: int = 36;
+
+pub const NETLINK_GET_STRICT_CHK: int = 12;
+
+#[cfg(target_os = "freebsd")]
+pub const AF_NETLINK: int = 38;
+#[cfg(not(target_os = "freebsd"))]
+pub const AF_NETLINK: int = 16;
+pub const PF_NETLINK: int = AF_NETLINK;
+pub const SOL_NETLINK: int = 270;
