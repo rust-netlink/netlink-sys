@@ -137,10 +137,10 @@ impl Socket {
     // when building with --features smol we don't need this
     #[allow(dead_code)]
     /// Make this socket non-blocking
-    pub fn set_non_blocking(&self, non_blocking: bool) -> Result<()> {
-        let mut non_blocking = non_blocking as libc::c_int;
+    pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
+        let mut nonblocking = nonblocking as libc::c_int;
         let res = unsafe {
-            libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &mut non_blocking)
+            libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &mut nonblocking)
         };
         if res < 0 {
             return Err(Error::last_os_error());
@@ -689,10 +689,10 @@ mod test {
     }
 
     #[test]
-    fn set_non_blocking() {
+    fn set_nonblocking() {
         let sock = Socket::new(NETLINK_ROUTE).unwrap();
-        sock.set_non_blocking(true).unwrap();
-        sock.set_non_blocking(false).unwrap();
+        sock.set_nonblocking(true).unwrap();
+        sock.set_nonblocking(false).unwrap();
     }
 
     #[test]
