@@ -13,14 +13,14 @@ use crate::{AsyncSocket, SocketAddr};
 ///
 /// Provides awaitable variants of the poll functions from [`AsyncSocket`].
 pub trait AsyncSocketExt: AsyncSocket {
-    /// `async fn send(&mut self, buf: &[u8]) -> io::Result<usize>`
-    fn send<'a, 'b>(&'a mut self, buf: &'b [u8]) -> PollSend<'a, 'b, Self> {
+    /// `async fn send(&self, buf: &[u8]) -> io::Result<usize>`
+    fn send<'a, 'b>(&'a self, buf: &'b [u8]) -> PollSend<'a, 'b, Self> {
         PollSend { socket: self, buf }
     }
 
-    /// `async fn send(&mut self, buf: &[u8]) -> io::Result<usize>`
+    /// `async fn send(&self, buf: &[u8]) -> io::Result<usize>`
     fn send_to<'a, 'b>(
-        &'a mut self,
+        &'a self,
         buf: &'b [u8],
         addr: &'b SocketAddr,
     ) -> PollSendTo<'a, 'b, Self> {
@@ -31,20 +31,17 @@ pub trait AsyncSocketExt: AsyncSocket {
         }
     }
 
-    /// `async fn recv<B>(&mut self, buf: &mut [u8]) -> io::Result<()>`
-    fn recv<'a, 'b, B>(
-        &'a mut self,
-        buf: &'b mut B,
-    ) -> PollRecv<'a, 'b, Self, B>
+    /// `async fn recv<B>(&self, buf: &mut [u8]) -> io::Result<()>`
+    fn recv<'a, 'b, B>(&'a self, buf: &'b mut B) -> PollRecv<'a, 'b, Self, B>
     where
         B: bytes::BufMut,
     {
         PollRecv { socket: self, buf }
     }
 
-    /// `async fn recv<B>(&mut self, buf: &mut [u8]) -> io::Result<SocketAddr>`
+    /// `async fn recv<B>(&self, buf: &mut [u8]) -> io::Result<SocketAddr>`
     fn recv_from<'a, 'b, B>(
-        &'a mut self,
+        &'a self,
         buf: &'b mut B,
     ) -> PollRecvFrom<'a, 'b, Self, B>
     where
@@ -53,9 +50,9 @@ pub trait AsyncSocketExt: AsyncSocket {
         PollRecvFrom { socket: self, buf }
     }
 
-    /// `async fn recrecv_from_full(&mut self) -> io::Result<(Vec<u8>,
+    /// `async fn recrecv_from_full(&self) -> io::Result<(Vec<u8>,
     /// SocketAddr)>`
-    fn recv_from_full(&mut self) -> PollRecvFromFull<'_, Self> {
+    fn recv_from_full(&self) -> PollRecvFromFull<'_, Self> {
         PollRecvFromFull { socket: self }
     }
 }
@@ -63,7 +60,7 @@ pub trait AsyncSocketExt: AsyncSocket {
 impl<S: AsyncSocket> AsyncSocketExt for S {}
 
 pub struct PollSend<'a, 'b, S> {
-    socket: &'a mut S,
+    socket: &'a S,
     buf: &'b [u8],
 }
 
@@ -80,7 +77,7 @@ where
 }
 
 pub struct PollSendTo<'a, 'b, S> {
-    socket: &'a mut S,
+    socket: &'a S,
     buf: &'b [u8],
     addr: &'b SocketAddr,
 }
@@ -98,7 +95,7 @@ where
 }
 
 pub struct PollRecv<'a, 'b, S, B> {
-    socket: &'a mut S,
+    socket: &'a S,
     buf: &'b mut B,
 }
 
@@ -116,7 +113,7 @@ where
 }
 
 pub struct PollRecvFrom<'a, 'b, S, B> {
-    socket: &'a mut S,
+    socket: &'a S,
     buf: &'b mut B,
 }
 
@@ -134,7 +131,7 @@ where
 }
 
 pub struct PollRecvFromFull<'a, S> {
-    socket: &'a mut S,
+    socket: &'a S,
 }
 
 impl<S> Future for PollRecvFromFull<'_, S>

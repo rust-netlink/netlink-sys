@@ -46,7 +46,7 @@ impl AsyncSocket for TokioSocket {
     }
 
     fn poll_send(
-        &mut self,
+        &self,
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
@@ -66,7 +66,7 @@ impl AsyncSocket for TokioSocket {
     }
 
     fn poll_send_to(
-        &mut self,
+        &self,
         cx: &mut Context<'_>,
         buf: &[u8],
         addr: &SocketAddr,
@@ -82,7 +82,7 @@ impl AsyncSocket for TokioSocket {
     }
 
     fn poll_recv<B>(
-        &mut self,
+        &self,
         cx: &mut Context<'_>,
         buf: &mut B,
     ) -> Poll<io::Result<()>>
@@ -104,7 +104,7 @@ impl AsyncSocket for TokioSocket {
     }
 
     fn poll_recv_from<B>(
-        &mut self,
+        &self,
         cx: &mut Context<'_>,
         buf: &mut B,
     ) -> Poll<io::Result<SocketAddr>>
@@ -130,7 +130,7 @@ impl AsyncSocket for TokioSocket {
     }
 
     fn poll_recv_from_full(
-        &mut self,
+        &self,
         cx: &mut Context<'_>,
     ) -> Poll<io::Result<(Vec<u8>, SocketAddr)>> {
         loop {
