@@ -31,7 +31,7 @@ const AUDIT_STATUS_PID: u32 = 4;
 #[async_std::main]
 async fn main() {
     let kernel_unicast: SocketAddr = SocketAddr::new(0, 0);
-    let mut socket = SmolSocket::new(NETLINK_AUDIT).unwrap();
+    let socket = SmolSocket::new(NETLINK_AUDIT).unwrap();
 
     let mut status = StatusMessage::new();
     status.enabled = 1;

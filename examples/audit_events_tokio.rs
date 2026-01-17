@@ -31,7 +31,7 @@ const AUDIT_STATUS_PID: u32 = 4;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let kernel_unicast: SocketAddr = SocketAddr::new(0, 0);
-    let mut socket = TokioSocket::new(NETLINK_AUDIT).unwrap();
+    let socket = TokioSocket::new(NETLINK_AUDIT).unwrap();
 
     let mut status = StatusMessage::new();
     status.enabled = 1;
