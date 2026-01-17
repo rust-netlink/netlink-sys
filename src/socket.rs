@@ -410,7 +410,7 @@ impl Socket {
         Ok(res as usize)
     }
 
-    pub fn set_pktinfo(&mut self, value: bool) -> Result<()> {
+    pub fn set_pktinfo(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
@@ -429,7 +429,7 @@ impl Socket {
         Ok(res == 1)
     }
 
-    pub fn add_membership(&mut self, group: u32) -> Result<()> {
+    pub fn add_membership(&self, group: u32) -> Result<()> {
         setsockopt(
             self.as_raw_fd(),
             libc::SOL_NETLINK,
@@ -438,7 +438,7 @@ impl Socket {
         )
     }
 
-    pub fn drop_membership(&mut self, group: u32) -> Result<()> {
+    pub fn drop_membership(&self, group: u32) -> Result<()> {
         setsockopt(
             self.as_raw_fd(),
             libc::SOL_NETLINK,
@@ -457,7 +457,7 @@ impl Socket {
     /// `NETLINK_BROADCAST_ERROR` (since Linux 2.6.30). When not set,
     /// `netlink_broadcast()` only reports `ESRCH` errors and silently
     /// ignore `NOBUFS` errors.
-    pub fn set_broadcast_error(&mut self, value: bool) -> Result<()> {
+    pub fn set_broadcast_error(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
@@ -478,7 +478,7 @@ impl Socket {
 
     /// `NETLINK_NO_ENOBUFS` (since Linux 2.6.30). This flag can be used by
     /// unicast and broadcast listeners to avoid receiving `ENOBUFS` errors.
-    pub fn set_no_enobufs(&mut self, value: bool) -> Result<()> {
+    pub fn set_no_enobufs(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
@@ -502,7 +502,7 @@ impl Socket {
     /// have an nsid assigned into the network namespace where the socket
     /// has been opened. The nsid is sent to user space via an ancillary
     /// data.
-    pub fn set_listen_all_namespaces(&mut self, value: bool) -> Result<()> {
+    pub fn set_listen_all_namespaces(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
@@ -527,7 +527,7 @@ impl Socket {
     /// The netlink message header is still included, so the user can
     /// guess from the sequence  number which message triggered the
     /// acknowledgment.
-    pub fn set_cap_ack(&mut self, value: bool) -> Result<()> {
+    pub fn set_cap_ack(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
@@ -549,7 +549,7 @@ impl Socket {
     /// `NETLINK_EXT_ACK`
     /// Extended ACK controls reporting of additional error/warning TLVs in
     /// NLMSG_ERROR and NLMSG_DONE messages.
-    pub fn set_ext_ack(&mut self, value: bool) -> Result<()> {
+    pub fn set_ext_ack(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
             self.as_raw_fd(),
@@ -697,7 +697,7 @@ mod test {
 
     #[test]
     fn options() {
-        let mut sock = Socket::new(NETLINK_ROUTE).unwrap();
+        let sock = Socket::new(NETLINK_ROUTE).unwrap();
 
         sock.set_cap_ack(true).unwrap();
         assert!(sock.get_cap_ack().unwrap());
