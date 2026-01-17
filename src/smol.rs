@@ -33,7 +33,7 @@ impl FromRawFd for SmolSocket {
         // valid, open file descriptor and transfers ownership of it to us.
         let socket = unsafe { Socket::from_raw_fd(fd) };
         socket
-            .set_non_blocking(true)
+            .set_nonblocking(true)
             .expect("failed to set netlink socket non-blocking");
         SmolSocket(
             Async::new(socket)

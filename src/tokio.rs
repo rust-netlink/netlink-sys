@@ -31,7 +31,7 @@ impl FromRawFd for TokioSocket {
         // valid, open file descriptor and transfers ownership of it to us.
         let socket = unsafe { Socket::from_raw_fd(fd) };
         socket
-            .set_non_blocking(true)
+            .set_nonblocking(true)
             .expect("failed to set netlink socket non-blocking");
         // SAFETY: `socket` owns a valid open netlink fd and keeps it open and
         // unchanged for the lifetime of the `AsyncFd`.
@@ -63,7 +63,7 @@ impl AsyncSocket for TokioSocket {
 
     fn new(protocol: isize) -> io::Result<Self> {
         let socket = Socket::new(protocol)?;
-        socket.set_non_blocking(true)?;
+        socket.set_nonblocking(true)?;
         // SAFETY: `socket` owns a valid open netlink fd and keeps it open and
         // unchanged for the lifetime of the `AsyncFd`.
         Ok(Self(unsafe { AsyncFd::register(socket) }?))
