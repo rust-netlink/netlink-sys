@@ -10,10 +10,6 @@ readme = "README.md"
 repository = "https://github.com/rust-netlink/netlink-sys"
 description = "netlink sockets, with optional integration with tokio"
 
-# When running the examples against a local version of `netlink-sys`
-# [patch.crates-io]
-# netlink-sys = { path = "." }
-
 [dependencies]
 bytes = "1.8"
 libc = "0.2.164"
