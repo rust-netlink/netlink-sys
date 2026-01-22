@@ -1,4 +1,16 @@
 # Changelog
+## [0.8.8] - 2026-01-22
+### Breaking changes
+ - N/A
+
+### New features
+ - N/A
+
+### Bug fixes
+ - Do not need mut for socket. (f54c420, 51c01b6)
+ - Replace 'futures' dependency for 'futures-util'. (498df8b)
+ - Use latest rust-netlink crates in dev dependency. (1e0a9da)
+
 ## [0.8.7] - 2024-12-10
 ### Breaking Changes
  * N/A
