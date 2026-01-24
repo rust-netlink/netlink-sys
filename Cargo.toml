@@ -10,6 +10,10 @@ readme = "README.md"
 repository = "https://github.com/rust-netlink/netlink-sys"
 description = "netlink sockets, with optional integration with tokio"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--generate-link-to-definition"]
+
 [dependencies]
 bytes = "1.8"
 libc = "0.2.164"
