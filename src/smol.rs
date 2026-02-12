@@ -20,7 +20,7 @@ pub struct SmolSocket(Async<Socket>);
 impl FromRawFd for SmolSocket {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         let socket = Socket::from_raw_fd(fd);
-        socket.set_non_blocking(true).unwrap();
+        socket.set_nonblocking(true).unwrap();
         SmolSocket(Async::new(socket).unwrap())
     }
 }
