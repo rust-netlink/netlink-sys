@@ -35,6 +35,7 @@ impl Source for Socket {
     }
 }
 
+#[cfg(target_endian = "little")]
 #[cfg(test)]
 mod tests {
     use super::*;
