@@ -4,7 +4,7 @@ use std::{
     io::{Error, Result},
     mem,
     os::{
-        fd::{AsFd, BorrowedFd, FromRawFd},
+        fd::{AsFd, BorrowedFd, FromRawFd, IntoRawFd},
         unix::io::{AsRawFd, RawFd},
     },
 };
@@ -66,6 +66,14 @@ impl AsRawFd for Socket {
 impl AsFd for Socket {
     fn as_fd(&self) -> BorrowedFd<'_> {
         unsafe { BorrowedFd::borrow_raw(self.0) }
+    }
+}
+
+impl IntoRawFd for Socket {
+    fn into_raw_fd(self) -> RawFd {
+        let fd = self.0;
+        std::mem::forget(self);
+        fd
     }
 }
 
