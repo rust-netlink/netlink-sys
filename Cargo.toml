@@ -47,7 +47,7 @@ smol_socket = ["async-io", "futures-util"]
 
 [dev-dependencies]
 netlink-packet-audit = "0.6.1"
-netlink-packet-core = "0.8.0"
+netlink-packet-core = "0.9.0"
 
 [dev-dependencies.tokio]
 version = "1.0.1"
