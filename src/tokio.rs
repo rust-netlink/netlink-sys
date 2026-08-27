@@ -18,7 +18,7 @@ pub struct TokioSocket(AsyncFd<Socket>);
 impl FromRawFd for TokioSocket {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         let socket = Socket::from_raw_fd(fd);
-        socket.set_non_blocking(true).unwrap();
+        socket.set_nonblocking(true).unwrap();
         TokioSocket(AsyncFd::new(socket).unwrap())
     }
 }
@@ -41,7 +41,7 @@ impl AsyncSocket for TokioSocket {
 
     fn new(protocol: isize) -> io::Result<Self> {
         let socket = Socket::new(protocol)?;
-        socket.set_non_blocking(true)?;
+        socket.set_nonblocking(true)?;
         Ok(Self(AsyncFd::new(socket)?))
     }
 
