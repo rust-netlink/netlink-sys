@@ -32,13 +32,12 @@ impl FromRawFd for SmolSocket {
         // SAFETY: The caller of `from_raw_fd` guarantees that `fd` is a
         // valid, open file descriptor and transfers ownership of it to us.
         let socket = unsafe { Socket::from_raw_fd(fd) };
-        socket
-            .set_nonblocking(true)
-            .expect("failed to set netlink socket non-blocking");
-        SmolSocket(
-            Async::new(socket)
-                .expect("failed to register netlink socket with async-io"),
-        )
+        // `Async::new` puts the socket in non-blocking mode and registers it
+        // with the reactor.
+        SmolSocket(Async::new(socket).expect(
+            "failed to set non-blocking mode or register netlink socket \
+                 with async-io",
+        ))
     }
 }
 
