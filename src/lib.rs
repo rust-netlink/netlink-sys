@@ -16,9 +16,6 @@
 
 #![deny(missing_docs)]
 
-mod constants;
-mod sys;
-
 mod socket;
 pub use self::socket::Socket;
 

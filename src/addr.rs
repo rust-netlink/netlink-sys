@@ -6,7 +6,42 @@ use std::{
     mem,
 };
 
-use crate::{constants::PF_NETLINK, sys::sockaddr_nl};
+#[cfg(not(target_os = "freebsd"))]
+use libc::PF_NETLINK;
+#[cfg(not(target_os = "freebsd"))]
+pub(crate) use libc::sockaddr_nl;
+
+#[cfg(target_os = "freebsd")]
+const PF_NETLINK: libc::c_int = 38;
+
+#[cfg(target_os = "freebsd")]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct sockaddr_nl {
+    pub nl_len: u8,
+    pub nl_family: libc::sa_family_t,
+    pub nl_pad: u16,
+    pub nl_pid: u32,
+    pub nl_groups: u32,
+}
+
+#[cfg(target_os = "freebsd")]
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of sockaddr_nl"][::core::mem::size_of::<sockaddr_nl>() - 12usize];
+    ["Alignment of sockaddr_nl"]
+        [::core::mem::align_of::<sockaddr_nl>() - 4usize];
+    ["Offset of field: sockaddr_nl::nl_len"]
+        [::core::mem::offset_of!(sockaddr_nl, nl_len) - 0usize];
+    ["Offset of field: sockaddr_nl::nl_family"]
+        [::core::mem::offset_of!(sockaddr_nl, nl_family) - 1usize];
+    ["Offset of field: sockaddr_nl::nl_pad"]
+        [::core::mem::offset_of!(sockaddr_nl, nl_pad) - 2usize];
+    ["Offset of field: sockaddr_nl::nl_pid"]
+        [::core::mem::offset_of!(sockaddr_nl, nl_pid) - 4usize];
+    ["Offset of field: sockaddr_nl::nl_groups"]
+        [::core::mem::offset_of!(sockaddr_nl, nl_groups) - 8usize];
+};
 
 /// The address of a netlink socket
 ///

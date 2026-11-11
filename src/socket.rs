@@ -10,18 +10,30 @@ use std::{
 };
 
 #[cfg(not(target_os = "freebsd"))]
-use crate::constants::{
-    NETLINK_BROADCAST_ERROR, NETLINK_NO_ENOBUFS, NETLINK_PKTINFO,
+use libc::{
+    NETLINK_ADD_MEMBERSHIP, NETLINK_BROADCAST_ERROR, NETLINK_CAP_ACK,
+    NETLINK_DROP_MEMBERSHIP, NETLINK_EXT_ACK, NETLINK_GET_STRICT_CHK,
+    NETLINK_LISTEN_ALL_NSID, NETLINK_NO_ENOBUFS, NETLINK_PKTINFO, PF_NETLINK,
+    SOL_NETLINK,
 };
-use crate::{
-    SocketAddr,
-    constants::{
-        NETLINK_ADD_MEMBERSHIP, NETLINK_CAP_ACK, NETLINK_DROP_MEMBERSHIP,
-        NETLINK_EXT_ACK, NETLINK_GET_STRICT_CHK, NETLINK_LISTEN_ALL_NSID,
-        PF_NETLINK, SOL_NETLINK,
-    },
-    sys::sockaddr_nl,
-};
+
+#[cfg(target_os = "freebsd")]
+mod freebsd {
+    pub(super) const NETLINK_ADD_MEMBERSHIP: libc::c_int = 1;
+    pub(super) const NETLINK_DROP_MEMBERSHIP: libc::c_int = 2;
+    pub(super) const NETLINK_LISTEN_ALL_NSID: libc::c_int = 8;
+    pub(super) const NETLINK_CAP_ACK: libc::c_int = 10;
+    pub(super) const NETLINK_EXT_ACK: libc::c_int = 11;
+    pub(super) const NETLINK_GET_STRICT_CHK: libc::c_int = 12;
+
+    pub(super) const PF_NETLINK: libc::c_int = 38;
+    pub(super) const SOL_NETLINK: libc::c_int = 270;
+}
+
+#[cfg(target_os = "freebsd")]
+use self::freebsd::*;
+
+use crate::{SocketAddr, addr::sockaddr_nl};
 
 /// A netlink socket.
 ///
