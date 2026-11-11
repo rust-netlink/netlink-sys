@@ -10,13 +10,15 @@ use std::{
 };
 
 #[cfg(not(target_os = "freebsd"))]
-use crate::constants::{NETLINK_BROADCAST_ERROR, NETLINK_NO_ENOBUFS};
+use crate::constants::{
+    NETLINK_BROADCAST_ERROR, NETLINK_NO_ENOBUFS, NETLINK_PKTINFO,
+};
 use crate::{
     SocketAddr,
     constants::{
         NETLINK_ADD_MEMBERSHIP, NETLINK_CAP_ACK, NETLINK_DROP_MEMBERSHIP,
         NETLINK_EXT_ACK, NETLINK_GET_STRICT_CHK, NETLINK_LISTEN_ALL_NSID,
-        NETLINK_PKTINFO, PF_NETLINK, SOL_NETLINK,
+        PF_NETLINK, SOL_NETLINK,
     },
     sys::sockaddr_nl,
 };
@@ -476,6 +478,7 @@ impl Socket {
 
     /// `NETLINK_PKTINFO`. When set, received messages include packet
     /// information describing their origin.
+    #[cfg(not(target_os = "freebsd"))]
     pub fn set_pktinfo(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
@@ -487,6 +490,7 @@ impl Socket {
     }
 
     /// Return whether `NETLINK_PKTINFO` is enabled.
+    #[cfg(not(target_os = "freebsd"))]
     pub fn get_pktinfo(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
