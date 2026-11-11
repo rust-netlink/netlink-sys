@@ -3,12 +3,10 @@
 use std::{
     io,
     os::unix::io::{AsFd, AsRawFd, BorrowedFd, FromRawFd, RawFd},
-    task::{Context, Poll},
+    task::{Context, Poll, ready},
 };
 
 use async_io::Async;
-
-use futures_util::ready;
 
 use log::trace;
 
