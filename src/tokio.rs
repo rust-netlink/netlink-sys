@@ -64,6 +64,9 @@ impl AsyncSocket for TokioSocket {
     }
 
     fn new(protocol: isize) -> io::Result<Self> {
+        // `AsyncFd::register` panics when called outside a Tokio runtime.
+        // `new` returns a `Result`, so report that as an error instead.
+        tokio::runtime::Handle::try_current().map_err(io::Error::other)?;
         let socket = Socket::new(protocol)?;
         socket.set_nonblocking(true)?;
         // SAFETY: `socket` owns a valid open netlink fd and keeps it open and
@@ -169,5 +172,26 @@ impl AsyncSocket for TokioSocket {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const NETLINK_ROUTE: isize = libc::NETLINK_ROUTE as isize;
+
+    #[test]
+    fn new_outside_runtime_returns_error() {
+        let err = match TokioSocket::new(NETLINK_ROUTE) {
+            Ok(_) => panic!("expected an error outside a Tokio runtime"),
+            Err(err) => err,
+        };
+        assert_eq!(err.kind(), io::ErrorKind::Other);
+    }
+
+    #[tokio::test]
+    async fn new_inside_runtime_succeeds() {
+        TokioSocket::new(NETLINK_ROUTE).unwrap();
     }
 }

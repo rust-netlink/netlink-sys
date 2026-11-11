@@ -22,8 +22,9 @@ log = "0.4.8"
 optional = true
 version = "1.54"
 default-features = false
-# We only depend on tokio for AsyncFd
-features = ["net"]
+# We only depend on tokio for AsyncFd. The `rt` feature is required to check
+# that a runtime is available before registering the socket.
+features = ["net", "rt"]
 
 [dependencies.mio]
 optional = true
