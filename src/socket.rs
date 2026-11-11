@@ -70,6 +70,10 @@ impl AsFd for Socket {
 }
 
 impl IntoRawFd for Socket {
+    /// Consumes the `Socket` and returns its raw file descriptor.
+    ///
+    /// Ownership of the descriptor is transferred to the caller, who is
+    /// responsible for closing it. This method does not close the descriptor.
     fn into_raw_fd(self) -> RawFd {
         let fd = self.0;
         std::mem::forget(self);

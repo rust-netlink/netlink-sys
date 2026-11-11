@@ -100,8 +100,19 @@ impl AsyncSocket for SmolSocket {
         self.0.get_ref()
     }
 
-    /// Mutable access to underyling [`Socket`]
+    /// Mutable access to the underlying [`Socket`].
+    ///
+    /// # Safety
+    ///
+    /// The socket is registered with the async-io reactor. Do not drop or
+    /// replace it through the returned reference
+    /// (`async_io::Async::get_mut` requires that the inner I/O source is not
+    /// dropped through the reference).
     fn socket_mut(&mut self) -> &mut Socket {
+        // SAFETY: `get_mut` requires the inner I/O source not to be dropped
+        // through the returned reference. We only expose it as `&mut Socket`
+        // for configuration and do not drop or replace it here; callers are
+        // documented to uphold the same requirement.
         unsafe { self.0.get_mut() }
     }
 
