@@ -189,6 +189,11 @@ impl Socket {
     /// for. After calling `connect`, [`Socket::send`] and [`Socket::recv`]
     /// respectively send and receive datagrams to and from `remote_addr`.
     ///
+    /// Netlink's `connect` operation is synchronous: it records the peer
+    /// address without any handshake and does not wait for I/O, so it does not
+    /// return `EINPROGRESS` even when the socket is non-blocking. For
+    /// robustness, an `EINPROGRESS` error is nevertheless treated as success.
+    ///
     /// # Examples
     ///
     /// In this example we:
@@ -230,43 +235,20 @@ impl Socket {
     /// }
     /// ```
     pub fn connect(&self, remote_addr: &SocketAddr) -> Result<()> {
-        // FIXME:
-        //
-        // Event though for SOCK_DGRAM sockets there's no IO, if our socket is
-        // non-blocking, connect() might return EINPROGRESS. In theory,
-        // the right way to treat EINPROGRESS would be to ignore the
-        // error, and let the user poll the socket to check when it becomes
-        // writable, indicating that the connection succeeded. The code already
-        // exists in mio for TcpStream:
-        //
-        // > pub fn connect(stream: net::TcpStream, addr: &SocketAddr) ->
-        // > io::Result<TcpStream> {
-        // > set_non_block(stream.as_raw_fd())?;
-        // > match stream.connect(addr) {
-        // > Ok(..) => {}
-        // > Err(ref e) if e.raw_os_error() == Some(libc::EINPROGRESS) => {}
-        // > Err(e) => return Err(e),
-        // > }
-        // > Ok(TcpStream {  inner: stream })
-        // > }
-        //
-        // In practice, since the connection does not require any IO for
-        // SOCK_DGRAM sockets, it almost never returns EINPROGRESS and
-        // so for now, we just return whatever libc::connect returns. If
-        // it returns EINPROGRESS, the caller will have to handle the error
-        // themself
-        //
-        // Refs:
-        //
-        // - https://stackoverflow.com/a/14046386/1836144
-        // - https://lists.isc.org/pipermail/bind-users/2009-August/077527.html
         let (addr, addr_len) = remote_addr.as_raw();
         // SAFETY: `addr` points to a live `sockaddr_nl` inside `remote_addr`
         // and `addr_len` is its size. The socket descriptor is valid for the
         // duration of the call.
         let res = unsafe { libc::connect(self.as_raw_fd(), addr, addr_len) };
         if res < 0 {
-            return Err(Error::last_os_error());
+            let err = Error::last_os_error();
+            // Linux netlink connect is synchronous and never returns
+            // EINPROGRESS, even for non-blocking sockets. Accept it anyway as
+            // success to honour the generic non-blocking connect contract.
+            if err.raw_os_error() == Some(libc::EINPROGRESS) {
+                return Ok(());
+            }
+            return Err(err);
         }
         Ok(())
     }
@@ -765,6 +747,15 @@ mod test {
     #[test]
     fn connect() {
         let sock = Socket::new(NETLINK_ROUTE).unwrap();
+        sock.connect(&SocketAddr::new(0, 0)).unwrap();
+    }
+
+    #[test]
+    fn connect_nonblocking() {
+        let sock = Socket::new(NETLINK_ROUTE).unwrap();
+        sock.set_nonblocking(true).unwrap();
+        // Netlink connect is synchronous, so it succeeds immediately even on a
+        // non-blocking socket.
         sock.connect(&SocketAddr::new(0, 0)).unwrap();
     }
 
