@@ -595,9 +595,8 @@ impl Socket {
     /// and this doubled value is returned by [`Self::get_rx_buf_sz`] (see
     /// socket(7)). The default value is set by the
     /// `/proc/sys/net/core/rmem_default` file, and the maximum allowed value is
-    /// set by the `/proc/sys/net/core/rmem_max` file. The minimum (doubled)
-    /// value for this option is 256.
-    pub fn set_rx_buf_sz<T>(&self, size: T) -> Result<()> {
+    /// set by the `/proc/sys/net/core/rmem_max` file.
+    pub fn set_rx_buf_sz(&self, size: usize) -> Result<()> {
         setsockopt(self.as_raw_fd(), libc::SOL_SOCKET, libc::SO_RCVBUF, size)
     }
 
@@ -755,6 +754,13 @@ mod test {
         // assert!(sock.get_listen_all_namespaces().unwrap());
         // sock.set_listen_all_namespaces(false).unwrap();
         // assert!(!sock.get_listen_all_namespaces().unwrap());
+    }
+
+    #[test]
+    fn set_rx_buf_sz_accepts_valid_value() {
+        let sock = Socket::new(NETLINK_ROUTE).unwrap();
+        sock.set_rx_buf_sz(4096).unwrap();
+        assert!(sock.get_rx_buf_sz().unwrap() >= 4096);
     }
 
     #[test]
