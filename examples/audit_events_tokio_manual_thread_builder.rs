@@ -9,15 +9,15 @@ use netlink_sys::{AsyncSocket, TokioSocket};
 
 const NETLINK_AUDIT: isize = libc::NETLINK_AUDIT as isize;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
-        .build()
-        .unwrap();
+        .build()?;
 
     let future = async {
-        TokioSocket::new(NETLINK_AUDIT).unwrap();
+        TokioSocket::new(NETLINK_AUDIT)?;
+        Ok::<_, std::io::Error>(())
     };
-    rt.handle().block_on(future);
+    rt.handle().block_on(future)?;
     Ok(())
 }

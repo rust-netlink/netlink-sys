@@ -4,14 +4,17 @@
 //
 // ```
 // cd netlink-sys
-// cargo build --example audit_events_async_std --features async_std_socket
+// cargo build --example audit_events_smol --features smol_socket
 // ```
 //
 // Run *as root*:
 //
 // ```
-// ../target/debug/examples/audit_events_async_std
+// ../target/debug/examples/audit_events_smol
 // ```
+//
+// This example uses `SmolSocket` (backed by `async-io`) with the async-std
+// runtime. Any runtime that drives the `async-io` reactor can be used.
 
 use std::process;
 
@@ -27,9 +30,9 @@ const AUDIT_STATUS_ENABLED: u32 = 1;
 const AUDIT_STATUS_PID: u32 = 4;
 
 #[async_std::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let kernel_unicast: SocketAddr = SocketAddr::new(0, 0);
-    let socket = SmolSocket::new(NETLINK_AUDIT).unwrap();
+    let socket = SmolSocket::new(NETLINK_AUDIT)?;
 
     let mut status = StatusMessage::new();
     status.enabled = 1;
@@ -46,12 +49,11 @@ async fn main() {
     println!(">>> {:?}", nl_msg);
     socket
         .send_to(&buf[..nl_msg.buffer_len()], &kernel_unicast)
-        .await
-        .unwrap();
+        .await?;
 
     let mut buf = vec![0u8; 1024 * 8];
     loop {
-        let (n, _addr) = socket.recv_from(&mut buf).await.unwrap();
+        let (n, _addr) = socket.recv_from(&mut buf).await?;
         // This dance with the NetlinkBuffer should not be
         // necessary. It is here to work around a netlink bug. See:
         // https://github.com/mozilla/libaudit-go/issues/24
@@ -62,8 +64,7 @@ async fn main() {
                 nl_buf.set_length(n as u32);
             }
         }
-        let parsed =
-            NetlinkMessage::<AuditMessage>::deserialize(&buf[..n]).unwrap();
+        let parsed = NetlinkMessage::<AuditMessage>::deserialize(&buf[..n])?;
         println!("<<< {:?}", parsed);
     }
 }
