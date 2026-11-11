@@ -49,22 +49,21 @@ async fn main() {
         .await
         .unwrap();
 
-    let mut buf = bytes::BytesMut::with_capacity(1024 * 8);
+    let mut buf = vec![0u8; 1024 * 8];
     loop {
-        buf.clear();
-        let _addr = socket.recv_from(&mut buf).await.unwrap();
+        let (n, _addr) = socket.recv_from(&mut buf).await.unwrap();
         // This dance with the NetlinkBuffer should not be
         // necessary. It is here to work around a netlink bug. See:
         // https://github.com/mozilla/libaudit-go/issues/24
         // https://github.com/linux-audit/audit-userspace/issues/78
         {
-            let n = buf.len();
-            let mut nl_buf = NetlinkBuffer::new(&mut buf);
+            let mut nl_buf = NetlinkBuffer::new(&mut buf[..n]);
             if n != nl_buf.length() as usize {
                 nl_buf.set_length(n as u32);
             }
         }
-        let parsed = NetlinkMessage::<AuditMessage>::deserialize(&buf).unwrap();
+        let parsed =
+            NetlinkMessage::<AuditMessage>::deserialize(&buf[..n]).unwrap();
         println!("<<< {:?}", parsed);
     }
 }

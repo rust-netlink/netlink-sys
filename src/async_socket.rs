@@ -35,32 +35,27 @@ pub trait AsyncSocket: Sized + Unpin {
 
     /// Polling wrapper for [`Socket::recv`]
     ///
-    /// Passes 0 for flags, and ignores the returned length (the buffer will
-    /// have advanced by the amount read).
-    fn poll_recv<B>(
+    /// Passes 0 for flags and returns the number of bytes read.
+    fn poll_recv(
         &self,
         cx: &mut Context<'_>,
-        buf: &mut B,
-    ) -> Poll<io::Result<()>>
-    where
-        B: bytes::BufMut;
+        buf: &mut [u8],
+    ) -> Poll<io::Result<usize>>;
 
     /// Polling wrapper for [`Socket::recv_from`]
     ///
-    /// Passes 0 for flags, and ignores the returned length - just returns the
-    /// address (the buffer will have advanced by the amount read).
-    fn poll_recv_from<B>(
+    /// Passes 0 for flags and returns the number of bytes read along with the
+    /// sender address.
+    fn poll_recv_from(
         &self,
         cx: &mut Context<'_>,
-        buf: &mut B,
-    ) -> Poll<io::Result<SocketAddr>>
-    where
-        B: bytes::BufMut;
+        buf: &mut [u8],
+    ) -> Poll<io::Result<(usize, SocketAddr)>>;
 
     /// Polling wrapper for [`Socket::recv_from_full`]
     ///
-    /// Passes 0 for flags, and ignores the returned length - just returns the
-    /// address (the buffer will have advanced by the amount read).
+    /// Passes 0 for flags and returns the received data along with the sender
+    /// address.
     fn poll_recv_from_full(
         &self,
         cx: &mut Context<'_>,

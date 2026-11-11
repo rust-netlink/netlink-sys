@@ -41,7 +41,7 @@ use crate::SocketAddr;
 /// let mut buf = vec![0; 4096];
 /// loop {
 ///     // receive a datagram
-///     let (n_received, sender_addr) = socket.recv_from(&mut &mut buf[..], 0).unwrap();
+///     let (n_received, sender_addr) = socket.recv_from(&mut buf, 0).unwrap();
 ///     assert_eq!(sender_addr, kernel_addr);
 ///     println!("received datagram {:?}", &buf[..n_received]);
 ///     if buf[4] == 2 && buf[5] == 0 {
@@ -199,7 +199,7 @@ impl Socket {
     /// // buffer for receiving the response
     /// let mut buf = vec![0; 4096];
     /// loop {
-    ///     let mut n_received = socket.recv(&mut &mut buf[..], 0).unwrap();
+    ///     let mut n_received = socket.recv(&mut buf, 0).unwrap();
     ///     println!("received {:?}", &buf[..n_received]);
     ///     if buf[4] == 2 && buf[5] == 0 {
     ///         println!("the kernel responded with an error");
@@ -256,7 +256,11 @@ impl Socket {
     /// Read a datagram from the socket and return the number of bytes that have
     /// been read and the address of the sender. The data being read is
     /// copied into `buf`. If `buf` is too small, the datagram is truncated. The
-    /// supported flags are the `MSG_*` described in `man 2 recvmsg`
+    /// supported flags are the `MSG_*` described in `man 2 recvmsg`.
+    ///
+    /// The returned length is the length reported by `recvfrom`; when
+    /// `MSG_TRUNC` is used it can exceed `buf.len()` even though no more than
+    /// `buf.len()` bytes were copied.
     ///
     /// # Warning
     ///
@@ -264,14 +268,25 @@ impl Socket {
     /// only ONE datagram, but this seems not to be always true for netlink
     /// sockets: with some protocols like `NETLINK_AUDIT`, multiple netlink
     /// packets can be read with a single call.
-    pub fn recv_from<B>(
+    pub fn recv_from(
         &self,
-        buf: &mut B,
+        buf: &mut [u8],
         flags: libc::c_int,
-    ) -> Result<(usize, SocketAddr)>
-    where
-        B: bytes::BufMut,
-    {
+    ) -> Result<(usize, SocketAddr)> {
+        // SAFETY: `buf` is valid for writes of `buf.len()` bytes and
+        // `recvfrom` writes at most that many bytes.
+        self.recv_from_raw(buf.as_mut_ptr(), buf.len(), flags)
+    }
+
+    // Shared implementation for `recv_from` and `recv_from_full`. Taking a raw
+    // pointer lets `recv_from_full` write directly into a `Vec`'s spare
+    // capacity without zero-initializing it first.
+    fn recv_from_raw(
+        &self,
+        buf: *mut u8,
+        buf_len: usize,
+        flags: libc::c_int,
+    ) -> Result<(usize, SocketAddr)> {
         // Create an empty storage for the address. Note that Rust standard
         // library create a sockaddr_storage so that it works for any
         // address family, but here, we already know that we'll have a
@@ -305,18 +320,10 @@ impl Socket {
         // we need to create a pointer to it.
         let addrlen_ptr = &mut addrlen as *mut usize as *mut libc::socklen_t;
 
-        let chunk = buf.chunk_mut();
-        //                        Cast the *mut u8 into *mut void.
-        //                 This is equivalent to casting a *char into *void
-        //                                   See [thread]
-        //                                         ^
-        //             Create a *mut u8            |
-        //                    ^                    |
-        //                    |                    |
-        //             +------+-------+   +--------+-------+
-        //            /                \ /                  \
-        let buf_ptr = chunk.as_mut_ptr() as *mut libc::c_void;
-        let buf_len = chunk.len() as libc::size_t;
+        // Cast the *mut u8 into *mut c_void. This is equivalent to casting a
+        // *char into *void.
+        let buf_ptr = buf as *mut libc::c_void;
+        let buf_len = buf_len as libc::size_t;
 
         let res = unsafe {
             libc::recvfrom(
@@ -330,37 +337,25 @@ impl Socket {
         };
         if res < 0 {
             return Err(Error::last_os_error());
-        } else {
-            // with `MSG_TRUNC` `res` might exceed `buf_len`
-            let written = std::cmp::min(buf_len, res as usize);
-            unsafe {
-                buf.advance_mut(written);
-            }
         }
         Ok((res as usize, SocketAddr(addr)))
     }
 
     /// For a connected socket, `recv` reads a datagram from the socket. The
     /// sender is the remote peer the socket is connected to (see
-    /// [`Socket::connect`]). See also [`Socket::recv_from`]
-    pub fn recv<B>(&self, buf: &mut B, flags: libc::c_int) -> Result<usize>
-    where
-        B: bytes::BufMut,
-    {
-        let chunk = buf.chunk_mut();
-        let buf_ptr = chunk.as_mut_ptr() as *mut libc::c_void;
-        let buf_len = chunk.len() as libc::size_t;
+    /// [`Socket::connect`]). See also [`Socket::recv_from`].
+    ///
+    /// The returned length is the length reported by `recv`; when `MSG_TRUNC`
+    /// is used it can exceed `buf.len()` even though no more than `buf.len()`
+    /// bytes were copied.
+    pub fn recv(&self, buf: &mut [u8], flags: libc::c_int) -> Result<usize> {
+        let buf_ptr = buf.as_mut_ptr() as *mut libc::c_void;
+        let buf_len = buf.len() as libc::size_t;
 
         let res =
             unsafe { libc::recv(self.as_raw_fd(), buf_ptr, buf_len, flags) };
         if res < 0 {
             return Err(Error::last_os_error());
-        } else {
-            // with `MSG_TRUNC` `res` might exceed `buf_len`
-            let written = std::cmp::min(buf_len, res as usize);
-            unsafe {
-                buf.advance_mut(written);
-            }
         }
         Ok(res as usize)
     }
@@ -369,16 +364,31 @@ impl Socket {
     /// messages that exceed the length of the buffer passed as argument,
     /// this method always reads a whole message, no matter its size.
     pub fn recv_from_full(&self) -> Result<(Vec<u8>, SocketAddr)> {
-        // Peek
+        // Peek. A zero-length buffer combined with `MSG_TRUNC` makes the
+        // kernel return the full datagram length without copying any data.
         let mut buf: Vec<u8> = Vec::new();
-        let (peek_len, _) =
-            self.recv_from(&mut buf, libc::MSG_PEEK | libc::MSG_TRUNC)?;
+        let (peek_len, _) = self.recv_from_raw(
+            buf.as_mut_ptr(),
+            buf.len(),
+            libc::MSG_PEEK | libc::MSG_TRUNC,
+        )?;
 
-        // Receive
-        buf.clear();
+        // Receive directly into the spare capacity so the buffer does not
+        // need to be zero-initialized first.
         buf.reserve(peek_len);
-        let (rlen, addr) = self.recv_from(&mut buf, 0)?;
+        let spare = buf.spare_capacity_mut();
+        let (rlen, addr) = self.recv_from_raw(
+            spare.as_mut_ptr().cast::<u8>(),
+            spare.len(),
+            0,
+        )?;
         validate_len(rlen, peek_len, "recv_from_full")?;
+        // SAFETY: `recv_from_raw` wrote `rlen` bytes into the spare capacity
+        // and the length check above guarantees `rlen == peek_len`, which is
+        // at most `spare.len()`.
+        unsafe {
+            buf.set_len(rlen);
+        }
         Ok((buf, addr))
     }
 

@@ -36,27 +36,21 @@ pub trait AsyncSocketExt: AsyncSocket {
         }
     }
 
-    /// `async fn recv<B>(&self, buf: &mut [u8]) -> io::Result<()>`
-    fn recv<'a, 'b, B>(&'a self, buf: &'b mut B) -> PollRecv<'a, 'b, Self, B>
-    where
-        B: bytes::BufMut,
-    {
+    /// `async fn recv(&self, buf: &mut [u8]) -> io::Result<usize>`
+    fn recv<'a, 'b>(&'a self, buf: &'b mut [u8]) -> PollRecv<'a, 'b, Self> {
         PollRecv { socket: self, buf }
     }
 
-    /// `async fn recv<B>(&self, buf: &mut [u8]) -> io::Result<SocketAddr>`
-    fn recv_from<'a, 'b, B>(
+    /// `async fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize,
+    /// SocketAddr)>`
+    fn recv_from<'a, 'b>(
         &'a self,
-        buf: &'b mut B,
-    ) -> PollRecvFrom<'a, 'b, Self, B>
-    where
-        B: bytes::BufMut,
-    {
+        buf: &'b mut [u8],
+    ) -> PollRecvFrom<'a, 'b, Self> {
         PollRecvFrom { socket: self, buf }
     }
 
-    /// `async fn recrecv_from_full(&self) -> io::Result<(Vec<u8>,
-    /// SocketAddr)>`
+    /// `async fn recv_from_full(&self) -> io::Result<(Vec<u8>, SocketAddr)>`
     fn recv_from_full(&self) -> PollRecvFromFull<'_, Self> {
         PollRecvFromFull { socket: self }
     }
@@ -102,17 +96,16 @@ where
 }
 
 /// Future returned by [`AsyncSocketExt::recv`].
-pub struct PollRecv<'a, 'b, S, B> {
+pub struct PollRecv<'a, 'b, S> {
     socket: &'a S,
-    buf: &'b mut B,
+    buf: &'b mut [u8],
 }
 
-impl<S, B> Future for PollRecv<'_, '_, S, B>
+impl<S> Future for PollRecv<'_, '_, S>
 where
     S: AsyncSocket,
-    B: bytes::BufMut,
 {
-    type Output = io::Result<()>;
+    type Output = io::Result<usize>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this: &mut Self = Pin::into_inner(self);
@@ -121,17 +114,16 @@ where
 }
 
 /// Future returned by [`AsyncSocketExt::recv_from`].
-pub struct PollRecvFrom<'a, 'b, S, B> {
+pub struct PollRecvFrom<'a, 'b, S> {
     socket: &'a S,
-    buf: &'b mut B,
+    buf: &'b mut [u8],
 }
 
-impl<S, B> Future for PollRecvFrom<'_, '_, S, B>
+impl<S> Future for PollRecvFrom<'_, '_, S>
 where
     S: AsyncSocket,
-    B: bytes::BufMut,
 {
-    type Output = io::Result<SocketAddr>;
+    type Output = io::Result<(usize, SocketAddr)>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this: &mut Self = Pin::into_inner(self);
