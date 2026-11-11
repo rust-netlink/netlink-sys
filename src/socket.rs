@@ -359,10 +359,13 @@ impl Socket {
         // actual type that is behind *sockaddr: it could be a sockaddr_nl but
         // also a sockaddr_in, a sockaddr_in6, or even the generic
         // sockaddr_storage that can store any address.
-        let mut addrlen = mem::size_of_val(&addr);
+        // `recvfrom` expects a `socklen_t`, so use that type for the length
+        // storage instead of a `usize`, which is wider on 64-bit platforms and
+        // would be misinterpreted by the kernel on big-endian systems.
+        let mut addrlen = mem::size_of_val(&addr) as libc::socklen_t;
         // recvfrom does not take the address length by value (see [thread]), so
         // we need to create a pointer to it.
-        let addrlen_ptr = &mut addrlen as *mut usize as *mut libc::socklen_t;
+        let addrlen_ptr = &mut addrlen as *mut libc::socklen_t;
 
         // Cast the *mut u8 into *mut c_void. This is equivalent to casting a
         // *char into *void.
@@ -900,6 +903,23 @@ mod test {
         let addr = sock.bind_auto().unwrap();
         // make sure that the address we got from the kernel is there
         assert!(addr.port_number() != 0);
+    }
+
+    #[test]
+    fn recv_from_reports_sender_address() {
+        let protocol = libc::NETLINK_USERSOCK as isize;
+        let sender = Socket::new(protocol).unwrap();
+        let sender_addr = sender.bind_auto().unwrap();
+        let receiver = Socket::new(protocol).unwrap();
+        let receiver_addr = receiver.bind_auto().unwrap();
+
+        sender.send_to(&[1, 2, 3, 4], &receiver_addr, 0).unwrap();
+
+        let mut buf = [0u8; 16];
+        let (len, from) = receiver.recv_from(&mut buf, 0).unwrap();
+        assert_eq!(len, 4);
+        assert_eq!(&buf[..len], &[1, 2, 3, 4]);
+        assert_eq!(from, sender_addr);
     }
 
     #[test]
