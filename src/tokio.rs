@@ -3,10 +3,9 @@
 use std::{
     io,
     os::unix::io::{AsRawFd, FromRawFd, RawFd},
-    task::{Context, Poll},
+    task::{Context, Poll, ready},
 };
 
-use futures_util::ready;
 use log::trace;
 use tokio::io::unix::AsyncFd;
 
