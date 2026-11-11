@@ -179,7 +179,10 @@ impl AsyncSocket for TokioSocket {
 mod tests {
     use super::*;
 
+    #[cfg(not(target_os = "freebsd"))]
     const NETLINK_ROUTE: isize = libc::NETLINK_ROUTE as isize;
+    #[cfg(target_os = "freebsd")]
+    const NETLINK_ROUTE: isize = 0;
 
     #[test]
     fn new_outside_runtime_returns_error() {
