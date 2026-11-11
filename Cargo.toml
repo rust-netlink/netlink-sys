@@ -67,5 +67,5 @@ name = "audit_events_tokio_manual_thread_builder"
 required-features = ["tokio_socket"]
 
 [[example]]
-name = "audit_events_async_std"
+name = "audit_events_smol"
 required-features = ["smol_socket"]

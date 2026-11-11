@@ -27,9 +27,9 @@ const NETLINK_AUDIT: isize = libc::NETLINK_AUDIT as isize;
 pub const AUDIT_STATUS_ENABLED: u32 = 1;
 pub const AUDIT_STATUS_PID: u32 = 4;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let kernel_unicast: SocketAddr = SocketAddr::new(0, 0);
-    let socket = Socket::new(NETLINK_AUDIT).unwrap();
+    let socket = Socket::new(NETLINK_AUDIT)?;
 
     let mut status = StatusMessage::new();
     status.enabled = 1;
@@ -43,12 +43,10 @@ fn main() {
     let mut buf = vec![0; 1024 * 8];
     nl_msg.serialize(&mut buf[..nl_msg.buffer_len()]);
 
-    socket
-        .send_to(&buf[..nl_msg.buffer_len()], &kernel_unicast, 0)
-        .unwrap();
+    socket.send_to(&buf[..nl_msg.buffer_len()], &kernel_unicast, 0)?;
     let mut buf = vec![0; 1024 * 8];
     loop {
-        let (n, _addr) = socket.recv_from(&mut buf, 0).unwrap();
+        let (n, _addr) = socket.recv_from(&mut buf, 0)?;
         // This dance with the NetlinkBuffer should not be
         // necessary. It is here to work around a netlink bug. See:
         // https://github.com/mozilla/libaudit-go/issues/24
@@ -59,8 +57,7 @@ fn main() {
                 nl_buf.set_length(n as u32);
             }
         }
-        let parsed =
-            NetlinkMessage::<AuditMessage>::deserialize(&buf[0..n]).unwrap();
+        let parsed = NetlinkMessage::<AuditMessage>::deserialize(&buf[0..n])?;
         println!("<<< {parsed:?}");
     }
 }
