@@ -178,6 +178,12 @@ impl SocketAddr {
         // an all-zero bit pattern is a valid value. All fields are overwritten
         // below.
         let mut addr: sockaddr_nl = unsafe { mem::zeroed() };
+        #[cfg(target_os = "freebsd")]
+        {
+            // FreeBSD rejects bind/connect requests whose `nl_len` does not
+            // match the size of `struct sockaddr_nl`.
+            addr.nl_len = mem::size_of::<sockaddr_nl>() as u8;
+        }
         addr.nl_family = PF_NETLINK as libc::sa_family_t;
         addr.nl_pid = port_number;
         addr.nl_groups = multicast_groups;
