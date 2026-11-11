@@ -263,7 +263,8 @@ impl Socket {
     ///
     /// The returned length is the length reported by `recvfrom`; when
     /// `MSG_TRUNC` is used it can exceed `buf.len()` even though no more than
-    /// `buf.len()` bytes were copied.
+    /// `buf.len()` bytes were copied. If the syscall is interrupted by a
+    /// signal, it is retried.
     ///
     /// # Warning
     ///
@@ -335,7 +336,7 @@ impl Socket {
         // storage whose length matches `sockaddr_nl`, and `recvfrom` writes at
         // most `*addrlen_ptr` bytes to the address. The socket descriptor is
         // valid for the call.
-        let res = unsafe {
+        let res = retry_on_eintr(|| unsafe {
             libc::recvfrom(
                 self.as_raw_fd(),
                 buf_ptr,
@@ -344,10 +345,7 @@ impl Socket {
                 addr_ptr,
                 addrlen_ptr,
             )
-        };
-        if res < 0 {
-            return Err(Error::last_os_error());
-        }
+        })?;
         Ok((res as usize, SocketAddr(addr)))
     }
 
@@ -357,7 +355,8 @@ impl Socket {
     ///
     /// The returned length is the length reported by `recv`; when `MSG_TRUNC`
     /// is used it can exceed `buf.len()` even though no more than `buf.len()`
-    /// bytes were copied.
+    /// bytes were copied. If the syscall is interrupted by a signal, it is
+    /// retried.
     pub fn recv(&self, buf: &mut [u8], flags: libc::c_int) -> Result<usize> {
         let buf_ptr = buf.as_mut_ptr() as *mut libc::c_void;
         let buf_len = buf.len() as libc::size_t;
@@ -365,17 +364,16 @@ impl Socket {
         // SAFETY: `buf_ptr` points to `buf`, which is valid for writes of
         // `buf_len` bytes, and `recv` writes at most that many bytes. The
         // socket descriptor is valid for the call.
-        let res =
-            unsafe { libc::recv(self.as_raw_fd(), buf_ptr, buf_len, flags) };
-        if res < 0 {
-            return Err(Error::last_os_error());
-        }
+        let res = retry_on_eintr(|| unsafe {
+            libc::recv(self.as_raw_fd(), buf_ptr, buf_len, flags)
+        })?;
         Ok(res as usize)
     }
 
     /// Receive a full message. Unlike [`Socket::recv_from`], which truncates
     /// messages that exceed the length of the buffer passed as argument,
-    /// this method always reads a whole message, no matter its size.
+    /// this method always reads a whole message, no matter its size. If a
+    /// syscall is interrupted by a signal, it is retried.
     pub fn recv_from_full(&self) -> Result<(Vec<u8>, SocketAddr)> {
         // Peek. A zero-length buffer combined with `MSG_TRUNC` makes the
         // kernel return the full datagram length without copying any data.
@@ -406,7 +404,8 @@ impl Socket {
     }
 
     /// Send the given buffer `buf` to the remote peer with address `addr`. The
-    /// supported flags are the `MSG_*` values documented in `man 2 send`.
+    /// supported flags are the `MSG_*` values documented in `man 2 send`. If
+    /// the syscall is interrupted by a signal, it is retried.
     pub fn send_to(
         &self,
         buf: &[u8],
@@ -421,7 +420,7 @@ impl Socket {
         // `buf_len` bytes. `addr_ptr` points to a live `sockaddr_nl` inside
         // `addr` and `addr_len` is its size. The socket descriptor is valid for
         // the call.
-        let res = unsafe {
+        let res = retry_on_eintr(|| unsafe {
             libc::sendto(
                 self.as_raw_fd(),
                 buf_ptr,
@@ -430,27 +429,23 @@ impl Socket {
                 addr_ptr,
                 addr_len,
             )
-        };
-        if res < 0 {
-            return Err(Error::last_os_error());
-        }
+        })?;
         Ok(res as usize)
     }
 
     /// For a connected socket, `send` sends the given buffer `buf` to the
     /// remote peer the socket is connected to. See also [`Socket::connect`]
-    /// and [`Socket::send_to`].
+    /// and [`Socket::send_to`]. If the syscall is interrupted by a signal, it
+    /// is retried.
     pub fn send(&self, buf: &[u8], flags: libc::c_int) -> Result<usize> {
         let buf_ptr = buf.as_ptr() as *const libc::c_void;
         let buf_len = buf.len() as libc::size_t;
 
         // SAFETY: `buf_ptr` points to `buf`, which is valid for reads of
         // `buf_len` bytes. The socket descriptor is valid for the call.
-        let res =
-            unsafe { libc::send(self.as_raw_fd(), buf_ptr, buf_len, flags) };
-        if res < 0 {
-            return Err(Error::last_os_error());
-        }
+        let res = retry_on_eintr(|| unsafe {
+            libc::send(self.as_raw_fd(), buf_ptr, buf_len, flags)
+        })?;
         Ok(res as usize)
     }
 
@@ -656,6 +651,25 @@ impl Socket {
     }
 }
 
+/// Retry a syscall when it is interrupted by a signal.
+///
+/// `EINTR` means no data was transferred for netlink datagram operations, so
+/// retrying the call is safe.
+fn retry_on_eintr(
+    mut op: impl FnMut() -> libc::ssize_t,
+) -> Result<libc::ssize_t> {
+    loop {
+        let res = op();
+        if res >= 0 {
+            return Ok(res);
+        }
+        let err = Error::last_os_error();
+        if err.kind() != ErrorKind::Interrupted {
+            return Err(err);
+        }
+    }
+}
+
 /// Wrapper around `getsockopt`:
 ///
 /// ```no_rust
@@ -757,6 +771,40 @@ mod test {
         // Netlink connect is synchronous, so it succeeds immediately even on a
         // non-blocking socket.
         sock.connect(&SocketAddr::new(0, 0)).unwrap();
+    }
+
+    #[test]
+    fn retries_interrupted_syscalls() {
+        let mut calls = 0;
+        let res = retry_on_eintr(|| {
+            calls += 1;
+            if calls < 3 {
+                // SAFETY: on Linux, `__errno_location` returns a valid
+                // pointer to the current thread's `errno`.
+                unsafe { *libc::__errno_location() = libc::EINTR };
+                -1
+            } else {
+                7
+            }
+        })
+        .unwrap();
+        assert_eq!(res, 7);
+        assert_eq!(calls, 3);
+    }
+
+    #[test]
+    fn does_not_retry_other_errors() {
+        let mut calls = 0;
+        let err = retry_on_eintr(|| {
+            calls += 1;
+            // SAFETY: on Linux, `__errno_location` returns a valid pointer to
+            // the current thread's `errno`.
+            unsafe { *libc::__errno_location() = libc::EAGAIN };
+            -1
+        })
+        .unwrap_err();
+        assert_eq!(err.raw_os_error(), Some(libc::EAGAIN));
+        assert_eq!(calls, 1);
     }
 
     #[test]
