@@ -21,7 +21,6 @@ use libc::{
 mod freebsd {
     pub(super) const NETLINK_ADD_MEMBERSHIP: libc::c_int = 1;
     pub(super) const NETLINK_DROP_MEMBERSHIP: libc::c_int = 2;
-    pub(super) const NETLINK_LISTEN_ALL_NSID: libc::c_int = 8;
     pub(super) const NETLINK_CAP_ACK: libc::c_int = 10;
     pub(super) const NETLINK_EXT_ACK: libc::c_int = 11;
     pub(super) const NETLINK_GET_STRICT_CHK: libc::c_int = 12;
@@ -593,6 +592,7 @@ impl Socket {
     /// have an nsid assigned into the network namespace where the socket
     /// has been opened. The nsid is sent to user space via an ancillary
     /// data.
+    #[cfg(not(target_os = "freebsd"))]
     pub fn set_listen_all_namespaces(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
@@ -604,6 +604,7 @@ impl Socket {
     }
 
     /// Return whether `NETLINK_LISTEN_ALL_NSID` is enabled.
+    #[cfg(not(target_os = "freebsd"))]
     pub fn get_listen_all_namespaces(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
