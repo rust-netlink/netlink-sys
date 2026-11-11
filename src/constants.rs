@@ -21,7 +21,6 @@ mod freebsd {
 
     pub const NETLINK_ADD_MEMBERSHIP: c_int = 1;
     pub const NETLINK_DROP_MEMBERSHIP: c_int = 2;
-    pub const NETLINK_PKTINFO: c_int = 3;
     pub const NETLINK_LISTEN_ALL_NSID: c_int = 8;
     pub const NETLINK_CAP_ACK: c_int = 10;
     pub const NETLINK_EXT_ACK: c_int = 11;
