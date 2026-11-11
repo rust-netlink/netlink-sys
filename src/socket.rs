@@ -54,7 +54,7 @@ use crate::SocketAddr;
 ///     }
 /// }
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Socket(RawFd);
 
 impl AsRawFd for Socket {
