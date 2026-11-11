@@ -62,9 +62,11 @@ mod tests {
 
     #[test]
     fn test_event_loop() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::{Socket, SocketAddr, protocols::NETLINK_ROUTE};
+        use crate::{Socket, SocketAddr};
         use mio::{Events, Interest, Poll, Token};
         use std::time::Duration;
+
+        const NETLINK_ROUTE: isize = libc::NETLINK_ROUTE as isize;
 
         let mut poll = Poll::new()?;
         let mut events = Events::with_capacity(128);

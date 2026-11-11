@@ -20,7 +20,9 @@ use netlink_packet_core::{
     NLM_F_ACK, NLM_F_REQUEST, NetlinkBuffer, NetlinkMessage,
 };
 
-use netlink_sys::{Socket, SocketAddr, protocols::NETLINK_AUDIT};
+use netlink_sys::{Socket, SocketAddr};
+
+const NETLINK_AUDIT: isize = libc::NETLINK_AUDIT as isize;
 
 pub const AUDIT_STATUS_ENABLED: u32 = 1;
 pub const AUDIT_STATUS_PID: u32 = 4;

@@ -22,11 +22,11 @@ use crate::SocketAddr;
 /// 3. read the reponse
 ///
 /// ```rust
-/// use netlink_sys::{protocols::NETLINK_ROUTE, Socket, SocketAddr};
+/// use netlink_sys::{Socket, SocketAddr};
 /// use std::process;
 ///
 /// // open a new socket for the NETLINK_ROUTE subsystem (see "man 7 rtnetlink")
-/// let mut socket = Socket::new(NETLINK_ROUTE).unwrap();
+/// let mut socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// // address of the remote peer we'll send a message to. This particular address is for the kernel
 /// let kernel_addr = SocketAddr::new(0, 0);
 /// // this is a valid message for listing the network links on the system
@@ -95,10 +95,8 @@ impl Drop for Socket {
 }
 
 impl Socket {
-    /// Open a new socket for the given netlink subsystem. `protocol` must be
-    /// one of the [`netlink_sys::protocols`][protos] constants.
-    ///
-    /// [protos]: crate::protocols
+    /// Open a new socket for the given netlink subsystem. `protocol` is the
+    /// netlink protocol number, for example `libc::NETLINK_ROUTE`.
     pub fn new(protocol: isize) -> Result<Self> {
         let res = unsafe {
             libc::socket(
@@ -180,10 +178,10 @@ impl Socket {
     ///    [`Socket::recv`]
     ///
     /// ```rust
-    /// use netlink_sys::{protocols::NETLINK_ROUTE, Socket, SocketAddr};
+    /// use netlink_sys::{Socket, SocketAddr};
     /// use std::process;
     ///
-    /// let mut socket = Socket::new(NETLINK_ROUTE).unwrap();
+    /// let mut socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
     /// let _ = socket.bind_auto().unwrap();
     /// let kernel_addr = SocketAddr::new(0, 0);
     /// socket.connect(&kernel_addr).unwrap();
@@ -698,7 +696,8 @@ fn setsockopt<T>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::protocols::NETLINK_ROUTE;
+
+    const NETLINK_ROUTE: isize = libc::NETLINK_ROUTE as isize;
 
     #[test]
     fn new() {
