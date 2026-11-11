@@ -127,14 +127,15 @@ impl fmt::Display for SocketAddr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "address family: {}, pid: {}, multicast groups: {})",
+            "address family: {}, pid: {}, multicast groups: {}",
             self.0.nl_family, self.0.nl_pid, self.0.nl_groups
         )
     }
 }
 
 impl SocketAddr {
-    /// Create a new socket address for with th
+    /// Create a new socket address with the given port number and multicast
+    /// groups.
     pub fn new(port_number: u32, multicast_groups: u32) -> Self {
         let mut addr: libc::sockaddr_nl = unsafe { mem::zeroed() };
         addr.nl_family = libc::PF_NETLINK as libc::sa_family_t;
