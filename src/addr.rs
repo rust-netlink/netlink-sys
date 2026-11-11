@@ -137,6 +137,9 @@ impl SocketAddr {
     /// Create a new socket address with the given port number and multicast
     /// groups.
     pub fn new(port_number: u32, multicast_groups: u32) -> Self {
+        // SAFETY: `sockaddr_nl` is a plain C struct made only of integers and
+        // an all-zero bit pattern is a valid value. All fields are overwritten
+        // below.
         let mut addr: libc::sockaddr_nl = unsafe { mem::zeroed() };
         addr.nl_family = libc::PF_NETLINK as libc::sa_family_t;
         addr.nl_pid = port_number;

@@ -65,6 +65,9 @@ impl AsRawFd for Socket {
 
 impl AsFd for Socket {
     fn as_fd(&self) -> BorrowedFd<'_> {
+        // SAFETY: `Socket` exclusively owns a valid open file descriptor for
+        // the duration of the borrow, and `BorrowedFd` is tied to `&self` so
+        // the descriptor cannot be closed while it is borrowed.
         unsafe { BorrowedFd::borrow_raw(self.0) }
     }
 }
@@ -94,6 +97,9 @@ impl FromRawFd for Socket {
 
 impl Drop for Socket {
     fn drop(&mut self) {
+        // SAFETY: `Socket` owns a valid open file descriptor, and this is its
+        // only owner, so closing it exactly once here cannot race with another
+        // close or leave the descriptor usable elsewhere.
         unsafe { libc::close(self.as_raw_fd()) };
     }
 }
@@ -102,6 +108,9 @@ impl Socket {
     /// Open a new socket for the given netlink subsystem. `protocol` is the
     /// netlink protocol number, for example `libc::NETLINK_ROUTE`.
     pub fn new(protocol: isize) -> Result<Self> {
+        // SAFETY: `socket` takes only plain integer arguments and no pointer
+        // arguments, so every argument value is valid to pass; it returns a
+        // new descriptor or -1.
         let res = unsafe {
             libc::socket(
                 libc::PF_NETLINK,
@@ -118,6 +127,9 @@ impl Socket {
     /// Bind the socket to the given address
     pub fn bind(&self, addr: &SocketAddr) -> Result<()> {
         let (addr_ptr, addr_len) = addr.as_raw();
+        // SAFETY: `addr_ptr` points to a live `sockaddr_nl` inside `addr` and
+        // `addr_len` is its size. The socket descriptor is valid for the
+        // duration of the call.
         let res = unsafe { libc::bind(self.as_raw_fd(), addr_ptr, addr_len) };
         if res < 0 {
             return Err(Error::last_os_error());
@@ -139,6 +151,9 @@ impl Socket {
         let (addr_ptr, mut addr_len) = addr.as_raw_mut();
         let addr_len_copy = addr_len;
         let addr_len_ptr = &mut addr_len as *mut libc::socklen_t;
+        // SAFETY: `addr_ptr` points to a live `sockaddr_nl` that is valid for
+        // writes of `addr_len` bytes, and `addr_len_ptr` points to a live
+        // length variable. The socket descriptor is valid for the call.
         let res = unsafe {
             libc::getsockname(self.as_raw_fd(), addr_ptr, addr_len_ptr)
         };
@@ -154,6 +169,9 @@ impl Socket {
     /// Make this socket non-blocking
     pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
         let mut nonblocking = nonblocking as libc::c_int;
+        // SAFETY: `FIONBIO` expects a pointer to a `c_int`, which
+        // `&mut nonblocking` provides for the duration of the call. The socket
+        // descriptor is valid for the call.
         let res = unsafe {
             libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &mut nonblocking)
         };
@@ -243,6 +261,9 @@ impl Socket {
         // - https://stackoverflow.com/a/14046386/1836144
         // - https://lists.isc.org/pipermail/bind-users/2009-August/077527.html
         let (addr, addr_len) = remote_addr.as_raw();
+        // SAFETY: `addr` points to a live `sockaddr_nl` inside `remote_addr`
+        // and `addr_len` is its size. The socket descriptor is valid for the
+        // duration of the call.
         let res = unsafe { libc::connect(self.as_raw_fd(), addr, addr_len) };
         if res < 0 {
             return Err(Error::last_os_error());
@@ -291,6 +312,8 @@ impl Socket {
         // library create a sockaddr_storage so that it works for any
         // address family, but here, we already know that we'll have a
         // Netlink address, so we can create the appropriate storage.
+        // SAFETY: `sockaddr_nl` is a plain C struct made only of integers, so
+        // an all-zero bit pattern is a valid value. `recvfrom` fills it in.
         let mut addr = unsafe { mem::zeroed::<libc::sockaddr_nl>() };
 
         // recvfrom takes a *sockaddr as parameter so that it can accept any
@@ -325,6 +348,11 @@ impl Socket {
         let buf_ptr = buf as *mut libc::c_void;
         let buf_len = buf_len as libc::size_t;
 
+        // SAFETY: the caller guarantees that `buf_ptr` is valid for writes of
+        // `buf_len` bytes. `addr_ptr` and `addrlen_ptr` point to live local
+        // storage whose length matches `sockaddr_nl`, and `recvfrom` writes at
+        // most `*addrlen_ptr` bytes to the address. The socket descriptor is
+        // valid for the call.
         let res = unsafe {
             libc::recvfrom(
                 self.as_raw_fd(),
@@ -352,6 +380,9 @@ impl Socket {
         let buf_ptr = buf.as_mut_ptr() as *mut libc::c_void;
         let buf_len = buf.len() as libc::size_t;
 
+        // SAFETY: `buf_ptr` points to `buf`, which is valid for writes of
+        // `buf_len` bytes, and `recv` writes at most that many bytes. The
+        // socket descriptor is valid for the call.
         let res =
             unsafe { libc::recv(self.as_raw_fd(), buf_ptr, buf_len, flags) };
         if res < 0 {
@@ -404,6 +435,10 @@ impl Socket {
         let buf_ptr = buf.as_ptr() as *const libc::c_void;
         let buf_len = buf.len() as libc::size_t;
 
+        // SAFETY: `buf_ptr` points to `buf`, which is valid for reads of
+        // `buf_len` bytes. `addr_ptr` points to a live `sockaddr_nl` inside
+        // `addr` and `addr_len` is its size. The socket descriptor is valid for
+        // the call.
         let res = unsafe {
             libc::sendto(
                 self.as_raw_fd(),
@@ -427,6 +462,8 @@ impl Socket {
         let buf_ptr = buf.as_ptr() as *const libc::c_void;
         let buf_len = buf.len() as libc::size_t;
 
+        // SAFETY: `buf_ptr` points to `buf`, which is valid for reads of
+        // `buf_len` bytes. The socket descriptor is valid for the call.
         let res =
             unsafe { libc::send(self.as_raw_fd(), buf_ptr, buf_len, flags) };
         if res < 0 {
@@ -648,6 +685,8 @@ pub(crate) fn getsockopt<T: Copy>(
     option: libc::c_int,
 ) -> Result<T> {
     // Create storage for the options we're fetching
+    // SAFETY: all call sites instantiate `T` with integer socket-option types
+    // for which an all-zero bit pattern is valid.
     let mut slot: T = unsafe { mem::zeroed() };
 
     // Create a mutable raw pointer to the storage so that getsockopt can fill
@@ -663,6 +702,9 @@ pub(crate) fn getsockopt<T: Copy>(
     // big the storage needs to be.
     let slot_len_ptr = &mut slot_len as *mut libc::socklen_t;
 
+    // SAFETY: `slot_ptr` points to `slot`, which is valid for writes of
+    // `slot_len` bytes, and `slot_len_ptr` points to a live length variable.
+    // `fd` is valid for the duration of the call.
     let res =
         unsafe { libc::getsockopt(fd, level, option, slot_ptr, slot_len_ptr) };
     if res < 0 {
@@ -698,6 +740,9 @@ fn setsockopt<T>(
     let payload = &payload as *const T as *const libc::c_void;
     let payload_len = mem::size_of::<T>() as libc::socklen_t;
 
+    // SAFETY: `payload` points to a live `T` and `payload_len` is exactly the
+    // size of `T`, so `setsockopt` reads no more than the object it points to.
+    // `fd` is valid for the duration of the call.
     let res =
         unsafe { libc::setsockopt(fd, level, option, payload, payload_len) };
     if res < 0 {
