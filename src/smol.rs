@@ -18,12 +18,27 @@ use crate::{AsyncSocket, Socket, SocketAddr};
 pub struct SmolSocket(Async<Socket>);
 
 impl FromRawFd for SmolSocket {
+    /// # Safety
+    ///
+    /// `fd` must be an open netlink socket file descriptor. Ownership of `fd`
+    /// is transferred to the returned `SmolSocket`, which will close it on
+    /// drop. The caller must not use or close `fd` afterwards.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the socket cannot be set non-blocking or registered with the
+    /// async-io reactor, because `FromRawFd` cannot return an error.
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         // SAFETY: The caller of `from_raw_fd` guarantees that `fd` is a
         // valid, open file descriptor and transfers ownership of it to us.
         let socket = unsafe { Socket::from_raw_fd(fd) };
-        socket.set_non_blocking(true).unwrap();
-        SmolSocket(Async::new(socket).unwrap())
+        socket
+            .set_non_blocking(true)
+            .expect("failed to set netlink socket non-blocking");
+        SmolSocket(
+            Async::new(socket)
+                .expect("failed to register netlink socket with async-io"),
+        )
     }
 }
 
