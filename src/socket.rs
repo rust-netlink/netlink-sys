@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use std::{
-    io::{Error, Result},
+    io::{Error, ErrorKind, Result},
     mem,
     os::{
         fd::{AsFd, BorrowedFd, FromRawFd, IntoRawFd},
@@ -78,6 +78,11 @@ impl IntoRawFd for Socket {
 }
 
 impl FromRawFd for Socket {
+    /// # Safety
+    ///
+    /// `fd` must be an open netlink socket file descriptor. Ownership of `fd`
+    /// is transferred to the returned `Socket`, which will close it on drop.
+    /// The caller must not use or close `fd` afterwards.
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         Socket(fd)
     }
@@ -138,7 +143,7 @@ impl Socket {
         if res < 0 {
             return Err(Error::last_os_error());
         }
-        assert_eq!(addr_len, addr_len_copy);
+        validate_len(addr_len as usize, addr_len_copy as usize, "getsockname")?;
         Ok(())
     }
 
@@ -371,7 +376,7 @@ impl Socket {
         buf.clear();
         buf.reserve(peek_len);
         let (rlen, addr) = self.recv_from(&mut buf, 0)?;
-        assert_eq!(rlen, peek_len);
+        validate_len(rlen, peek_len, "recv_from_full")?;
         Ok((buf, addr))
     }
 
@@ -641,11 +646,23 @@ pub(crate) fn getsockopt<T: Copy>(
         return Err(Error::last_os_error());
     }
 
-    // Ignore the options that require the legnth to be set by getsockopt.
-    // We'll deal with them individually.
-    assert_eq!(slot_len as usize, mem::size_of::<T>());
+    validate_len(slot_len as usize, mem::size_of::<T>(), "getsockopt")?;
 
     Ok(slot)
+}
+
+/// Validate a length reported by a syscall against the length we expected.
+fn validate_len(actual: usize, expected: usize, operation: &str) -> Result<()> {
+    if actual != expected {
+        return Err(Error::new(
+            ErrorKind::InvalidData,
+            format!(
+                "{operation} returned an unexpected length: got {actual} \
+                 bytes, expected {expected} bytes"
+            ),
+        ));
+    }
+    Ok(())
 }
 
 // adapted from rust standard library
@@ -727,5 +744,28 @@ mod test {
         // assert!(sock.get_listen_all_namespaces().unwrap());
         // sock.set_listen_all_namespaces(false).unwrap();
         // assert!(!sock.get_listen_all_namespaces().unwrap());
+    }
+
+    #[test]
+    fn validate_len_accepts_matching_lengths() {
+        validate_len(4, 4, "test").unwrap();
+    }
+
+    #[test]
+    fn validate_len_rejects_mismatched_lengths() {
+        let err = validate_len(1, 2, "test").unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidData);
+        assert!(err.to_string().contains("test"));
+    }
+
+    #[test]
+    fn getsockopt_error_is_propagated() {
+        let sock = Socket::new(NETLINK_ROUTE).unwrap();
+        let res = getsockopt::<libc::c_int>(
+            sock.as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::c_int::MAX,
+        );
+        assert!(res.is_err());
     }
 }
