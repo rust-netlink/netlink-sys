@@ -23,7 +23,8 @@ pub trait AsyncSocketExt: AsyncSocket {
         PollSend { socket: self, buf }
     }
 
-    /// `async fn send(&self, buf: &[u8]) -> io::Result<usize>`
+    /// `async fn send_to(&self, buf: &[u8], addr: &SocketAddr) ->
+    /// io::Result<usize>`
     fn send_to<'a, 'b>(
         &'a self,
         buf: &'b [u8],
