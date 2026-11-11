@@ -1,6 +1,26 @@
 // SPDX-License-Identifier: MIT
 
+//! Netlink sockets for Linux.
+//!
+//! This crate provides a low-level [`Socket`] type for communicating over
+//! netlink, along with optional async integrations:
+//!
+//! - `TokioSocket` behind the `tokio_socket` feature.
+//! - `SmolSocket` behind the `smol_socket` feature.
+//! - [`mio::event::Source`](https://docs.rs/mio/latest/mio/event/trait.Source.html)
+//!   support for [`Socket`] behind the `mio_socket` feature.
+//!
+//! Netlink protocol constants are available in [`protocols`], and additional
+//! kernel constants are available in [`constants`].
+
+#![deny(missing_docs)]
+
 pub mod constants;
+
+/// Netlink protocol numbers.
+///
+/// These can be passed to [`Socket::new`](crate::Socket::new) to select the
+/// netlink subsystem to communicate with.
 pub mod protocols {
     pub use super::constants::{
         NETLINK_AUDIT, NETLINK_CONNECTOR, NETLINK_CRYPTO, NETLINK_DNRTMSG,

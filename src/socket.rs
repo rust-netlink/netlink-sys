@@ -423,6 +423,8 @@ impl Socket {
         Ok(res as usize)
     }
 
+    /// `NETLINK_PKTINFO`. When set, received messages include packet
+    /// information describing their origin.
     pub fn set_pktinfo(&self, value: bool) -> Result<()> {
         let value: libc::c_int = value.into();
         setsockopt(
@@ -433,6 +435,7 @@ impl Socket {
         )
     }
 
+    /// Return whether `NETLINK_PKTINFO` is enabled.
     pub fn get_pktinfo(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
@@ -442,6 +445,7 @@ impl Socket {
         Ok(res != 0)
     }
 
+    /// Join the netlink multicast group identified by `group`.
     pub fn add_membership(&self, group: u32) -> Result<()> {
         setsockopt(
             self.as_raw_fd(),
@@ -451,6 +455,7 @@ impl Socket {
         )
     }
 
+    /// Leave the netlink multicast group identified by `group`.
     pub fn drop_membership(&self, group: u32) -> Result<()> {
         setsockopt(
             self.as_raw_fd(),
@@ -480,6 +485,7 @@ impl Socket {
         )
     }
 
+    /// Return whether `NETLINK_BROADCAST_ERROR` is enabled.
     pub fn get_broadcast_error(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
@@ -501,6 +507,7 @@ impl Socket {
         )
     }
 
+    /// Return whether `NETLINK_NO_ENOBUFS` is enabled.
     pub fn get_no_enobufs(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
@@ -525,6 +532,7 @@ impl Socket {
         )
     }
 
+    /// Return whether `NETLINK_LISTEN_ALL_NSID` is enabled.
     pub fn get_listen_all_namespaces(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
@@ -550,6 +558,7 @@ impl Socket {
         )
     }
 
+    /// Return whether `NETLINK_CAP_ACK` is enabled.
     pub fn get_cap_ack(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
@@ -572,6 +581,7 @@ impl Socket {
         )
     }
 
+    /// Return whether `NETLINK_EXT_ACK` is enabled.
     pub fn get_ext_ack(&self) -> Result<bool> {
         let res = getsockopt::<libc::c_int>(
             self.as_raw_fd(),
@@ -582,11 +592,13 @@ impl Socket {
     }
 
     /// Sets socket receive buffer in bytes.
+    ///
     /// The kernel doubles this value (to allow space for bookkeeping overhead),
-    /// and this doubled value is returned by [get_rx_buf_sz].(see socket(7)
-    /// The default value is set by the proc/sys/net/core/rmem_default file, and
-    /// the maximum allowed value is set by the /proc/sys/net/core/rmem_max
-    /// file. The minimum (doubled) value for this option is 256.
+    /// and this doubled value is returned by [`Self::get_rx_buf_sz`] (see
+    /// socket(7)). The default value is set by the
+    /// `/proc/sys/net/core/rmem_default` file, and the maximum allowed value is
+    /// set by the `/proc/sys/net/core/rmem_max` file. The minimum (doubled)
+    /// value for this option is 256.
     pub fn set_rx_buf_sz<T>(&self, size: T) -> Result<()> {
         setsockopt(self.as_raw_fd(), libc::SOL_SOCKET, libc::SO_RCVBUF, size)
     }

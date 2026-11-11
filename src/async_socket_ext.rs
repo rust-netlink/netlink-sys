@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+//! Awaitable extensions for [`AsyncSocket`].
+//!
+//! The [`AsyncSocketExt`] trait provides futures built on top of the polling
+//! methods from [`AsyncSocket`].
+
 use std::{
     future::Future,
     io,
@@ -59,6 +64,7 @@ pub trait AsyncSocketExt: AsyncSocket {
 
 impl<S: AsyncSocket> AsyncSocketExt for S {}
 
+/// Future returned by [`AsyncSocketExt::send`].
 pub struct PollSend<'a, 'b, S> {
     socket: &'a S,
     buf: &'b [u8],
@@ -76,6 +82,7 @@ where
     }
 }
 
+/// Future returned by [`AsyncSocketExt::send_to`].
 pub struct PollSendTo<'a, 'b, S> {
     socket: &'a S,
     buf: &'b [u8],
@@ -94,6 +101,7 @@ where
     }
 }
 
+/// Future returned by [`AsyncSocketExt::recv`].
 pub struct PollRecv<'a, 'b, S, B> {
     socket: &'a S,
     buf: &'b mut B,
@@ -112,6 +120,7 @@ where
     }
 }
 
+/// Future returned by [`AsyncSocketExt::recv_from`].
 pub struct PollRecvFrom<'a, 'b, S, B> {
     socket: &'a S,
     buf: &'b mut B,
@@ -130,6 +139,7 @@ where
     }
 }
 
+/// Future returned by [`AsyncSocketExt::recv_from_full`].
 pub struct PollRecvFromFull<'a, S> {
     socket: &'a S,
 }
