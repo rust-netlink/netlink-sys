@@ -38,7 +38,7 @@ jobs:
         run: cargo doc --all-features --no-deps
 
   msrv:
-    name: MSRV (1.85)
+    name: MSRV
     runs-on: ubuntu-latest
 
     steps:
