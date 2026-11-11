@@ -26,7 +26,7 @@ use crate::SocketAddr;
 /// use std::process;
 ///
 /// // open a new socket for the NETLINK_ROUTE subsystem (see "man 7 rtnetlink")
-/// let mut socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
+/// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// // address of the remote peer we'll send a message to. This particular address is for the kernel
 /// let kernel_addr = SocketAddr::new(0, 0);
 /// // this is a valid message for listing the network links on the system
@@ -112,7 +112,7 @@ impl Socket {
     }
 
     /// Bind the socket to the given address
-    pub fn bind(&mut self, addr: &SocketAddr) -> Result<()> {
+    pub fn bind(&self, addr: &SocketAddr) -> Result<()> {
         let (addr_ptr, addr_len) = addr.as_raw();
         let res = unsafe { libc::bind(self.as_raw_fd(), addr_ptr, addr_len) };
         if res < 0 {
@@ -123,7 +123,7 @@ impl Socket {
 
     /// Bind the socket to an address assigned by the kernel, and return that
     /// address.
-    pub fn bind_auto(&mut self) -> Result<SocketAddr> {
+    pub fn bind_auto(&self) -> Result<SocketAddr> {
         let mut addr = SocketAddr::new(0, 0);
         self.bind(&addr)?;
         self.get_address(&mut addr)?;
@@ -181,7 +181,7 @@ impl Socket {
     /// use netlink_sys::{Socket, SocketAddr};
     /// use std::process;
     ///
-    /// let mut socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
+    /// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
     /// let _ = socket.bind_auto().unwrap();
     /// let kernel_addr = SocketAddr::new(0, 0);
     /// socket.connect(&kernel_addr).unwrap();
@@ -712,13 +712,13 @@ mod test {
 
     #[test]
     fn bind() {
-        let mut sock = Socket::new(NETLINK_ROUTE).unwrap();
+        let sock = Socket::new(NETLINK_ROUTE).unwrap();
         sock.bind(&SocketAddr::new(4321, 0)).unwrap();
     }
 
     #[test]
     fn bind_auto() {
-        let mut sock = Socket::new(NETLINK_ROUTE).unwrap();
+        let sock = Socket::new(NETLINK_ROUTE).unwrap();
         let addr = sock.bind_auto().unwrap();
         // make sure that the address we got from the kernel is there
         assert!(addr.port_number() != 0);

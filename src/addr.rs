@@ -35,7 +35,7 @@ use std::{
 /// use std::process;
 /// use netlink_sys::{SocketAddr, Socket};
 ///
-/// let mut socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
+/// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// // The first parameter is the port number. By setting it to 0 we ask the kernel to pick a port for us
 /// let mut addr = SocketAddr::new(0, 0);
 /// socket.bind(&addr).unwrap();
@@ -44,7 +44,7 @@ use std::{
 /// // the socket port number should be equal to the process ID, but there is no guarantee
 /// println!("socket port number = {}, process ID = {}", addr.port_number(), process::id());
 ///
-/// let mut socket2 = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
+/// let socket2 = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// let mut addr2 = SocketAddr::new(0, 0);
 /// socket2.bind(&addr2).unwrap();
 /// socket2.get_address(&mut addr2).unwrap();
@@ -60,7 +60,7 @@ use std::{
 /// use netlink_sys::{Socket, SocketAddr};
 /// use std::process;
 ///
-/// let mut socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
+/// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// let addr = socket.bind_auto().unwrap();
 /// println!("socket port number = {}", addr.port_number());
 /// ```
@@ -75,7 +75,7 @@ use std::{
 /// use netlink_sys::{Socket, SocketAddr};
 /// use std::process;
 ///
-/// let mut socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
+/// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// // set the socket port number to 2
 /// let mut addr = SocketAddr::new(2, 0);
 /// socket.bind(&addr).unwrap();
@@ -84,7 +84,7 @@ use std::{
 /// assert_eq!(2, addr.port_number());
 ///
 /// // Creating a second socket with the same port number fails
-/// let mut socket2 = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
+/// let socket2 = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// let mut addr2 = SocketAddr::new(2, 0);
 /// socket2.bind(&addr2).unwrap_err();
 /// ```
