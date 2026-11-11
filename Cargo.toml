@@ -16,7 +16,7 @@ rustdoc-args = ["--generate-link-to-definition"]
 
 [dependencies]
 libc = "0.2.164"
-log = "0.4.8"
+log = { version = "0.4.8", optional = true }
 
 [dependencies.tokio]
 optional = true
@@ -38,8 +38,8 @@ version = "2"
 [features]
 default = []
 mio_socket = ["mio"]
-tokio_socket = ["tokio"]
-smol_socket = ["async-io"]
+tokio_socket = ["tokio", "dep:log"]
+smol_socket = ["async-io", "dep:log"]
 
 [dev-dependencies]
 netlink-packet-audit = "0.7.0"
