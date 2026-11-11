@@ -33,8 +33,10 @@ impl FromRawFd for TokioSocket {
         socket
             .set_non_blocking(true)
             .expect("failed to set netlink socket non-blocking");
+        // SAFETY: `socket` owns a valid open netlink fd and keeps it open and
+        // unchanged for the lifetime of the `AsyncFd`.
         TokioSocket(
-            AsyncFd::new(socket)
+            unsafe { AsyncFd::register(socket) }
                 .expect("failed to register netlink socket with tokio"),
         )
     }
@@ -51,7 +53,10 @@ impl AsyncSocket for TokioSocket {
         self.0.get_ref()
     }
 
-    /// Mutable access to underyling [`Socket`]
+    /// Mutable access to the underlying [`Socket`].
+    ///
+    /// Do not replace the socket through the returned reference; the fd must
+    /// remain the same for the lifetime of the Tokio registration.
     fn socket_mut(&mut self) -> &mut Socket {
         self.0.get_mut()
     }
@@ -59,7 +64,9 @@ impl AsyncSocket for TokioSocket {
     fn new(protocol: isize) -> io::Result<Self> {
         let socket = Socket::new(protocol)?;
         socket.set_non_blocking(true)?;
-        Ok(Self(AsyncFd::new(socket)?))
+        // SAFETY: `socket` owns a valid open netlink fd and keeps it open and
+        // unchanged for the lifetime of the `AsyncFd`.
+        Ok(Self(unsafe { AsyncFd::register(socket) }?))
     }
 
     fn poll_send(
