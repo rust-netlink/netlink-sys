@@ -814,6 +814,10 @@ mod test {
     const NETLINK_ROUTE: isize = libc::NETLINK_ROUTE as isize;
     #[cfg(target_os = "freebsd")]
     const NETLINK_ROUTE: isize = 0;
+    #[cfg(not(target_os = "freebsd"))]
+    const NETLINK_USERSOCK: isize = libc::NETLINK_USERSOCK as isize;
+    #[cfg(target_os = "freebsd")]
+    const NETLINK_USERSOCK: isize = 2;
 
     fn set_errno(errno: libc::c_int) {
         #[cfg(target_os = "linux")]
@@ -907,10 +911,9 @@ mod test {
 
     #[test]
     fn recv_from_reports_sender_address() {
-        let protocol = libc::NETLINK_USERSOCK as isize;
-        let sender = Socket::new(protocol).unwrap();
+        let sender = Socket::new(NETLINK_USERSOCK).unwrap();
         let sender_addr = sender.bind_auto().unwrap();
-        let receiver = Socket::new(protocol).unwrap();
+        let receiver = Socket::new(NETLINK_USERSOCK).unwrap();
         let receiver_addr = receiver.bind_auto().unwrap();
 
         sender.send_to(&[1, 2, 3, 4], &receiver_addr, 0).unwrap();
