@@ -8,26 +8,46 @@ on:
       - main
 
 jobs:
-  ci:
-    name: CI (stable)
+  test:
+    name: Test (stable)
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust Stable
         run: |
+          rustup toolchain install stable --profile minimal
           rustup override set stable
-          rustup update stable
 
-      - name: Test with default feature
-        run: cargo test
+      - name: Test with default features
+        run: cargo test --all-targets
 
-      - name: Test with mio feature
-        run: cargo test --features mio_socket
+      - name: Test with all features
+        run: cargo test --all-features --all-targets
 
-      - name: Test with tokio feature
-        run: cargo test --features tokio_socket
+      - name: Test doctests
+        run: cargo test --all-features --doc
 
-      - name: Test with smol_socket feature
-        run: cargo test --features smol_socket
+      - name: Build examples
+        run: cargo build --examples --all-features
+
+      - name: Build documentation
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --all-features --no-deps
+
+  msrv:
+    name: MSRV (1.85)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust 1.85
+        run: |
+          rustup toolchain install 1.85 --profile minimal
+          rustup override set 1.85
+
+      - name: Test with all features
+        run: cargo test --all-features --all-targets
