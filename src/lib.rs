@@ -10,27 +10,11 @@
 //! - [`mio::event::Source`](https://docs.rs/mio/latest/mio/event/trait.Source.html)
 //!   support for [`Socket`] behind the `mio_socket` feature.
 //!
-//! Netlink protocol constants are available in [`protocols`], and additional
-//! kernel constants are available in [`constants`].
+//! Netlink protocol numbers are not re-exported by this crate. Pass the
+//! appropriate number (for example `libc::NETLINK_ROUTE`) to
+//! [`Socket::new`](crate::Socket::new).
 
 #![deny(missing_docs)]
-
-pub mod constants;
-
-/// Netlink protocol numbers.
-///
-/// These can be passed to [`Socket::new`](crate::Socket::new) to select the
-/// netlink subsystem to communicate with.
-pub mod protocols {
-    pub use super::constants::{
-        NETLINK_AUDIT, NETLINK_CONNECTOR, NETLINK_CRYPTO, NETLINK_DNRTMSG,
-        NETLINK_ECRYPTFS, NETLINK_FIB_LOOKUP, NETLINK_FIREWALL,
-        NETLINK_GENERIC, NETLINK_IP6_FW, NETLINK_ISCSI, NETLINK_KOBJECT_UEVENT,
-        NETLINK_NETFILTER, NETLINK_NFLOG, NETLINK_RDMA, NETLINK_ROUTE,
-        NETLINK_SCSITRANSPORT, NETLINK_SELINUX, NETLINK_SOCK_DIAG,
-        NETLINK_UNUSED, NETLINK_USERSOCK, NETLINK_XFRM,
-    };
-}
 
 mod socket;
 pub use self::socket::Socket;
