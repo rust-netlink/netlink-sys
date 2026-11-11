@@ -1,4 +1,38 @@
 # Changelog
+## [1.0.0-rc1] - 2026-11-11
+### Breaking changes
+ - API break: Drop Clone for Socket. (c71db75)
+ - Bump MSRV to 1.85 and edition to 2024. (32bede1)
+ - Remove constants module and inline constants. (3636648)
+ - API break: replace bytes::BufMut with &mut [u8]. (156c1f5)
+ - Stop exposing netlink constants. (78a3f3a)
+
+### New features
+ - Add support for FreeBSD. (ca4318a 1ee3a02 41f6448 067aa20)
+
+### Bug fixes
+ - async: fix send_to doc comment. (038da26)
+ - tokio: return an error when no runtime is available. (7599ad6)
+ - async: make socket_mut unsafe. (9e6b02c)
+ - socket: use socklen_t for recvfrom address length. (0159d87)
+ - socket: pass an int-sized value to SO_RCVBUF. (d98f740)
+ - socket: reject out-of-range protocols and gate big-endian doctests. (7136122)
+ - socket: retry interrupted syscalls. (725760b)
+ - socket: ignore EINPROGRESS on connect. (f21c324)
+ - Add SAFETY comments to unsafe blocks. (3053f37)
+ - examples: fix stale docs and use error returns. (71a0fdc)
+ - docs: fix SocketAddr docs and Display. (0f32535)
+ - deps: remove futures-util. (115bc25)
+ - smol: drop redundant set_nonblocking call. (158df9e)
+ - fix: match name with the std's & socket2's `set_nonblocking`. (c9aaa23)
+ - tokio: use AsyncFd::register. (6ff6960)
+ - Document raw fd and socket_mut safety. (2d71a86)
+ - set_rx_buf_sz: take usize and pass it through. (307fbd9)
+ - Make Socket::bind and bind_auto take &self. (8aa8cca)
+ - Document all public APIs. (b78dbaa)
+ - Fix panics on unexpected lengths from the kernel. (8899edc)
+ - LICENSE: fix LICENSE-MIT. (2a27adb)
+
 ## [0.9.0] - 2026-08-18
 ### Breaking changes
  - Use netlink-packet-core 0.9.0. (5dd7b8e)
