@@ -25,9 +25,9 @@ version = "0.3.31"
 
 [dependencies.tokio]
 optional = true
-version = "1.41.1"
+version = "1.54"
 default-features = false
-# We only depend on tokio for PollEvented
+# We only depend on tokio for AsyncFd
 features = ["net"]
 
 [dependencies.mio]
@@ -50,9 +50,9 @@ netlink-packet-audit = "0.7.0"
 netlink-packet-core = "0.9.0"
 
 [dev-dependencies.tokio]
-version = "1.0.1"
+version = "1.54"
 default-features = false
-# We only depend on tokio for PollEvented
+# We only depend on tokio for AsyncFd
 features = ["net", "macros", "rt-multi-thread"]
 
 [dev-dependencies.async-std]
