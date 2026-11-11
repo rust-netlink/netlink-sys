@@ -54,9 +54,12 @@ impl AsyncSocket for TokioSocket {
 
     /// Mutable access to the underlying [`Socket`].
     ///
-    /// Do not replace the socket through the returned reference; the fd must
-    /// remain the same for the lifetime of the Tokio registration.
-    fn socket_mut(&mut self) -> &mut Socket {
+    /// # Safety
+    ///
+    /// The returned socket must not be dropped or replaced, and its file
+    /// descriptor must not be closed or changed; the fd must remain the same
+    /// for the lifetime of the Tokio registration.
+    unsafe fn socket_mut(&mut self) -> &mut Socket {
         self.0.get_mut()
     }
 
