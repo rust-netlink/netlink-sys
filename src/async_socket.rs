@@ -12,8 +12,16 @@ pub trait AsyncSocket: Sized + Unpin {
     /// Access underyling [`Socket`]
     fn socket_ref(&self) -> &Socket;
 
-    /// Mutable access to underyling [`Socket`]
-    fn socket_mut(&mut self) -> &mut Socket;
+    /// Mutable access to the underlying [`Socket`].
+    ///
+    /// # Safety
+    ///
+    /// The returned socket must not be dropped or replaced, and its file
+    /// descriptor must not be closed or changed. Async backends keep the
+    /// original descriptor registered with their reactor, so doing any of
+    /// these through the returned reference would leave the registration
+    /// dangling.
+    unsafe fn socket_mut(&mut self) -> &mut Socket;
 
     /// Wrapper for [`Socket::new`]
     fn new(protocol: isize) -> io::Result<Self>;

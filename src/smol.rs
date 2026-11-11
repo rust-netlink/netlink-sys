@@ -105,11 +105,10 @@ impl AsyncSocket for SmolSocket {
     /// replace it through the returned reference
     /// (`async_io::Async::get_mut` requires that the inner I/O source is not
     /// dropped through the reference).
-    fn socket_mut(&mut self) -> &mut Socket {
-        // SAFETY: `get_mut` requires the inner I/O source not to be dropped
-        // through the returned reference. We only expose it as `&mut Socket`
-        // for configuration and do not drop or replace it here; callers are
-        // documented to uphold the same requirement.
+    unsafe fn socket_mut(&mut self) -> &mut Socket {
+        // SAFETY: The caller of this `unsafe fn` guarantees that the inner
+        // I/O source is not dropped or replaced through the returned
+        // reference, as required by `Async::get_mut`.
         unsafe { self.0.get_mut() }
     }
 
