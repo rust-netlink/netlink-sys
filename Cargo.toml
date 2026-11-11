@@ -1,7 +1,7 @@
 [package]
 authors = ["Corentin Henry <corentinhenry@gmail.com>"]
 name = "netlink-sys"
-version = "0.9.0"
+version = "1.0.0-rc1"
 edition = "2024"
 rust-version = "1.85"
 keywords = ["netlink", "ip", "linux"]
