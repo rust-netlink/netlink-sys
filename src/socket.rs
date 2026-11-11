@@ -638,8 +638,18 @@ impl Socket {
     /// and this doubled value is returned by [`Self::get_rx_buf_sz`] (see
     /// socket(7)). The default value is set by the
     /// `/proc/sys/net/core/rmem_default` file, and the maximum allowed value is
-    /// set by the `/proc/sys/net/core/rmem_max` file.
+    /// set by the `/proc/sys/net/core/rmem_max` file. Values larger than
+    /// `c_int::MAX` are rejected with [`ErrorKind::InvalidInput`].
     pub fn set_rx_buf_sz(&self, size: usize) -> Result<()> {
+        // `SO_RCVBUF` is an `int` in the kernel, so passing a `usize` would
+        // send 8 bytes on 64-bit platforms and be misinterpreted on
+        // big-endian systems or silently truncate large values.
+        let size: libc::c_int = size.try_into().map_err(|_| {
+            Error::new(
+                ErrorKind::InvalidInput,
+                format!("receive buffer size {size} does not fit in a C int"),
+            )
+        })?;
         setsockopt(self.as_raw_fd(), libc::SOL_SOCKET, libc::SO_RCVBUF, size)
     }
 
@@ -883,6 +893,15 @@ mod test {
         let sock = Socket::new(NETLINK_ROUTE).unwrap();
         sock.set_rx_buf_sz(4096).unwrap();
         assert!(sock.get_rx_buf_sz().unwrap() >= 4096);
+    }
+
+    #[test]
+    fn set_rx_buf_sz_rejects_value_that_does_not_fit_in_c_int() {
+        let sock = Socket::new(NETLINK_ROUTE).unwrap();
+        let size = libc::c_int::MAX as usize + 1;
+        let err = sock.set_rx_buf_sz(size).unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert!(err.to_string().contains("does not fit in a C int"));
     }
 
     #[test]
