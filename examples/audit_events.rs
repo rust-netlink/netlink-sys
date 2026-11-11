@@ -17,10 +17,10 @@ use std::process;
 
 use netlink_packet_audit::{AuditMessage, StatusMessage};
 use netlink_packet_core::{
-    NetlinkBuffer, NetlinkMessage, NLM_F_ACK, NLM_F_REQUEST,
+    NLM_F_ACK, NLM_F_REQUEST, NetlinkBuffer, NetlinkMessage,
 };
 
-use netlink_sys::{protocols::NETLINK_AUDIT, Socket, SocketAddr};
+use netlink_sys::{Socket, SocketAddr, protocols::NETLINK_AUDIT};
 
 pub const AUDIT_STATUS_ENABLED: u32 = 1;
 pub const AUDIT_STATUS_PID: u32 = 4;

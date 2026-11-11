@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_event_loop() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::{protocols::NETLINK_ROUTE, Socket, SocketAddr};
+        use crate::{Socket, SocketAddr, protocols::NETLINK_ROUTE};
         use mio::{Events, Interest, Poll, Token};
         use std::time::Duration;
 

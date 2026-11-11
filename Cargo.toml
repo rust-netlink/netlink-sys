@@ -2,8 +2,8 @@
 authors = ["Corentin Henry <corentinhenry@gmail.com>"]
 name = "netlink-sys"
 version = "0.9.0"
-edition = "2021"
-homepage = "https://github.com/rust-netlink/netlink-sys"
+edition = "2024"
+rust-version = "1.85"
 keywords = ["netlink", "ip", "linux"]
 license = "MIT"
 readme = "README.md"

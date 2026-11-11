@@ -19,7 +19,9 @@ pub struct SmolSocket(Async<Socket>);
 
 impl FromRawFd for SmolSocket {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
-        let socket = Socket::from_raw_fd(fd);
+        // SAFETY: The caller of `from_raw_fd` guarantees that `fd` is a
+        // valid, open file descriptor and transfers ownership of it to us.
+        let socket = unsafe { Socket::from_raw_fd(fd) };
         socket.set_non_blocking(true).unwrap();
         SmolSocket(Async::new(socket).unwrap())
     }
