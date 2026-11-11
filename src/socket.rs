@@ -22,6 +22,8 @@ use crate::SocketAddr;
 /// 3. read the reponse
 ///
 /// ```rust
+/// # #[cfg(target_endian = "little")]
+/// # {
 /// use netlink_sys::{Socket, SocketAddr};
 /// use std::process;
 ///
@@ -53,6 +55,7 @@ use crate::SocketAddr;
 ///         return;
 ///     }
 /// }
+/// # }
 /// ```
 #[derive(Debug)]
 pub struct Socket(RawFd);
@@ -108,6 +111,15 @@ impl Socket {
     /// Open a new socket for the given netlink subsystem. `protocol` is the
     /// netlink protocol number, for example `libc::NETLINK_ROUTE`.
     pub fn new(protocol: isize) -> Result<Self> {
+        // Reject values that do not fit in a C `int` instead of silently
+        // truncating them, which could select a different netlink protocol.
+        let c_protocol: libc::c_int = protocol.try_into().map_err(|_| {
+            Error::new(
+                ErrorKind::InvalidInput,
+                format!("netlink protocol {protocol} does not fit in a C int"),
+            )
+        })?;
+
         // SAFETY: `socket` takes only plain integer arguments and no pointer
         // arguments, so every argument value is valid to pass; it returns a
         // new descriptor or -1.
@@ -115,7 +127,7 @@ impl Socket {
             libc::socket(
                 libc::PF_NETLINK,
                 libc::SOCK_DGRAM | libc::SOCK_CLOEXEC,
-                protocol as libc::c_int,
+                c_protocol,
             )
         };
         if res < 0 {
@@ -205,6 +217,8 @@ impl Socket {
     ///    [`Socket::recv`]
     ///
     /// ```rust
+    /// # #[cfg(target_endian = "little")]
+    /// # {
     /// use netlink_sys::{Socket, SocketAddr};
     /// use std::process;
     ///
@@ -233,6 +247,7 @@ impl Socket {
     ///         return;
     ///     }
     /// }
+    /// # }
     /// ```
     pub fn connect(&self, remote_addr: &SocketAddr) -> Result<()> {
         let (addr, addr_len) = remote_addr.as_raw();
@@ -756,6 +771,15 @@ mod test {
     #[test]
     fn new() {
         Socket::new(NETLINK_ROUTE).unwrap();
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn new_rejects_protocol_that_does_not_fit_in_c_int() {
+        let protocol = libc::c_int::MAX as isize + 1;
+        let err = Socket::new(protocol).unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert!(err.to_string().contains("does not fit in a C int"));
     }
 
     #[test]
