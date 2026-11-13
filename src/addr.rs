@@ -95,7 +95,6 @@ const _: () = {
 ///
 /// ```rust
 /// use netlink_sys::{Socket, SocketAddr};
-/// use std::process;
 ///
 /// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// let addr = socket.bind_auto().unwrap();
@@ -107,10 +106,8 @@ const _: () = {
 /// The application can also pick the port number by calling Socket::bind with
 /// an address with a non-zero port number. However, it must ensure that this
 /// number is unique for each socket created. For instance:
-///
 /// ```rust
 /// use netlink_sys::{Socket, SocketAddr};
-/// use std::process;
 ///
 /// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
 /// // set the socket port number to 2
@@ -201,26 +198,7 @@ impl SocketAddr {
     }
 
     pub(crate) fn as_raw(&self) -> (*const libc::sockaddr, libc::socklen_t) {
-        let addr_ptr = &self.0 as *const sockaddr_nl as *const libc::sockaddr;
-        //             \                                 / \
-        // /              +---------------+---------------+
-        // +----------+---------+                               |
-        // |                               v
-        // |             create a raw pointer to the sockaddr_nl
-        // |
-        // v                                                cast
-        // *sockaddr_nl -> *sockaddr
-        //
-        // This kind of things seems to be pretty usual when using C APIs from
-        // Rust. It could be written in a shorter way thank to type
-        // inference:
-        //
-        //      let addr_ptr: *const libc:sockaddr = &self.0 as *const _ as
-        // *const _;
-        //
-        // But since this is my first time dealing with this kind of things I
-        // chose the most explicit form.
-
+        let addr_ptr = (&self.0 as *const sockaddr_nl).cast::<libc::sockaddr>();
         let addr_len = mem::size_of::<sockaddr_nl>() as libc::socklen_t;
         (addr_ptr, addr_len)
     }
@@ -228,7 +206,8 @@ impl SocketAddr {
     pub(crate) fn as_raw_mut(
         &mut self,
     ) -> (*mut libc::sockaddr, libc::socklen_t) {
-        let addr_ptr = &mut self.0 as *mut sockaddr_nl as *mut libc::sockaddr;
+        let addr_ptr =
+            (&mut self.0 as *mut sockaddr_nl).cast::<libc::sockaddr>();
         let addr_len = mem::size_of::<sockaddr_nl>() as libc::socklen_t;
         (addr_ptr, addr_len)
     }
