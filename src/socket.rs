@@ -3,10 +3,7 @@
 use std::{
     io::{Error, ErrorKind, Result},
     mem,
-    os::{
-        fd::{AsFd, BorrowedFd, IntoRawFd},
-        unix::io::{AsRawFd, RawFd},
-    },
+    os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, IntoRawFd, OwnedFd, RawFd},
 };
 
 #[cfg(not(target_os = "freebsd"))]
@@ -48,16 +45,16 @@ use crate::{SocketAddr, addr::sockaddr_nl};
 /// # #[cfg(target_endian = "little")]
 /// # {
 /// use netlink_sys::{Socket, SocketAddr};
-/// use std::process;
 ///
 /// // open a new socket for the NETLINK_ROUTE subsystem (see "man 7 rtnetlink")
 /// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
-/// // address of the remote peer we'll send a message to. This particular address is for the kernel
+/// // address of the remote peer we'll send a message to. This particular
+/// // address is for the kernel.
 /// let kernel_addr = SocketAddr::new(0, 0);
 /// // this is a valid message for listing the network links on the system
 /// let pkt = vec![
-///     0x14, 0x00, 0x00, 0x00, 0x12, 0x00, 0x01, 0x03, 0xfd, 0xfe, 0x38, 0x5c, 0x00, 0x00, 0x00,
-///     0x00, 0x00, 0x00, 0x00, 0x00,
+///     0x14, 0x00, 0x00, 0x00, 0x12, 0x00, 0x01, 0x03, 0xfd, 0xfe, 0x38,
+///     0x5c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 /// ];
 /// // send the message to the kernel
 /// let n_sent = socket.send_to(&pkt[..], &kernel_addr, 0).unwrap();
@@ -81,20 +78,17 @@ use crate::{SocketAddr, addr::sockaddr_nl};
 /// # }
 /// ```
 #[derive(Debug)]
-pub struct Socket(RawFd);
+pub struct Socket(OwnedFd);
 
 impl AsRawFd for Socket {
     fn as_raw_fd(&self) -> RawFd {
-        self.0
+        self.0.as_raw_fd()
     }
 }
 
 impl AsFd for Socket {
     fn as_fd(&self) -> BorrowedFd<'_> {
-        // SAFETY: `Socket` exclusively owns a valid open file descriptor for
-        // the duration of the borrow, and `BorrowedFd` is tied to `&self` so
-        // the descriptor cannot be closed while it is borrowed.
-        unsafe { BorrowedFd::borrow_raw(self.0) }
+        self.0.as_fd()
     }
 }
 
@@ -104,18 +98,7 @@ impl IntoRawFd for Socket {
     /// Ownership of the descriptor is transferred to the caller, who is
     /// responsible for closing it. This method does not close the descriptor.
     fn into_raw_fd(self) -> RawFd {
-        let fd = self.0;
-        std::mem::forget(self);
-        fd
-    }
-}
-
-impl Drop for Socket {
-    fn drop(&mut self) {
-        // SAFETY: `Socket` owns a valid open file descriptor, and this is its
-        // only owner, so closing it exactly once here cannot race with another
-        // close or leave the descriptor usable elsewhere.
-        unsafe { libc::close(self.as_raw_fd()) };
+        self.0.into_raw_fd()
     }
 }
 
@@ -145,7 +128,9 @@ impl Socket {
         if res < 0 {
             return Err(Error::last_os_error());
         }
-        Ok(Socket(res))
+        // SAFETY: `libc::socket` returned a new descriptor that we own and
+        // that has not been handed to anyone else.
+        Ok(Socket(unsafe { OwnedFd::from_raw_fd(res) }))
     }
 
     /// Bind the socket to the given address
@@ -232,7 +217,6 @@ impl Socket {
     /// # #[cfg(target_endian = "little")]
     /// # {
     /// use netlink_sys::{Socket, SocketAddr};
-    /// use std::process;
     ///
     /// let socket = Socket::new(libc::NETLINK_ROUTE as isize).unwrap();
     /// let _ = socket.bind_auto().unwrap();
@@ -240,15 +224,15 @@ impl Socket {
     /// socket.connect(&kernel_addr).unwrap();
     /// // This is a valid message for listing the network links on the system
     /// let msg = vec![
-    ///     0x14, 0x00, 0x00, 0x00, 0x12, 0x00, 0x01, 0x03, 0xfd, 0xfe, 0x38, 0x5c, 0x00, 0x00, 0x00,
-    ///     0x00, 0x00, 0x00, 0x00, 0x00,
+    ///     0x14, 0x00, 0x00, 0x00, 0x12, 0x00, 0x01, 0x03, 0xfd, 0xfe, 0x38,
+    ///     0x5c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     /// ];
     /// let n_sent = socket.send(&msg[..], 0).unwrap();
     /// assert_eq!(n_sent, msg.len());
     /// // buffer for receiving the response
     /// let mut buf = vec![0; 4096];
     /// loop {
-    ///     let mut n_received = socket.recv(&mut buf, 0).unwrap();
+    ///     let n_received = socket.recv(&mut buf, 0).unwrap();
     ///     println!("received {:?}", &buf[..n_received]);
     ///     if buf[4] == 2 && buf[5] == 0 {
     ///         println!("the kernel responded with an error");
@@ -305,8 +289,6 @@ impl Socket {
         buf: &mut [u8],
         flags: libc::c_int,
     ) -> Result<(usize, SocketAddr)> {
-        // SAFETY: `buf` is valid for writes of `buf.len()` bytes and
-        // `recvfrom` writes at most that many bytes.
         self.recv_from_raw(buf.as_mut_ptr(), buf.len(), flags)
     }
 
@@ -319,46 +301,17 @@ impl Socket {
         buf_len: usize,
         flags: libc::c_int,
     ) -> Result<(usize, SocketAddr)> {
-        // Create an empty storage for the address. Note that Rust standard
-        // library create a sockaddr_storage so that it works for any
-        // address family, but here, we already know that we'll have a
-        // Netlink address, so we can create the appropriate storage.
         // SAFETY: `sockaddr_nl` is a plain C struct made only of integers, so
         // an all-zero bit pattern is a valid value. `recvfrom` fills it in.
         let mut addr = unsafe { mem::zeroed::<sockaddr_nl>() };
+        let addr_ptr = (&mut addr as *mut sockaddr_nl).cast::<libc::sockaddr>();
 
-        // recvfrom takes a *sockaddr as parameter so that it can accept any
-        // kind of address storage, so we need to create such a pointer
-        // for the sockaddr_nl we just initialized.
-        //
-        //                     Create a raw pointer to        Cast our raw
-        // pointer to a                     our storage. We cannot
-        // generic pointer to *sockaddr                     pass it to
-        // recvfrom yet.       that recvfrom can use
-        // ^                              ^
-        // |                              |
-        // +--------------+---------------+    +---------+--------+
-        //                 /                                \  /
-        // \
-        let addr_ptr = &mut addr as *mut sockaddr_nl as *mut libc::sockaddr;
-
-        // Why do we need to pass the address length? We're passing a generic
-        // *sockaddr to recvfrom. Somehow recvfrom needs to make sure
-        // that the address of the received packet would fit into the
-        // actual type that is behind *sockaddr: it could be a sockaddr_nl but
-        // also a sockaddr_in, a sockaddr_in6, or even the generic
-        // sockaddr_storage that can store any address.
-        // `recvfrom` expects a `socklen_t`, so use that type for the length
-        // storage instead of a `usize`, which is wider on 64-bit platforms and
-        // would be misinterpreted by the kernel on big-endian systems.
+        // `recvfrom` expects a `socklen_t` for the address length, not a
+        // `usize`, which the kernel would misinterpret on some platforms.
         let mut addrlen = mem::size_of_val(&addr) as libc::socklen_t;
-        // recvfrom does not take the address length by value (see [thread]), so
-        // we need to create a pointer to it.
         let addrlen_ptr = &mut addrlen as *mut libc::socklen_t;
 
-        // Cast the *mut u8 into *mut c_void. This is equivalent to casting a
-        // *char into *void.
-        let buf_ptr = buf as *mut libc::c_void;
+        let buf_ptr = buf.cast::<libc::c_void>();
         let buf_len = buf_len as libc::size_t;
 
         // SAFETY: the caller guarantees that `buf_ptr` is valid for writes of
@@ -522,13 +475,6 @@ impl Socket {
             group,
         )
     }
-
-    // pub fn list_membership(&self) -> Vec<u32> {
-    //     unimplemented!();
-    //     // getsockopt won't be enough here, because we may need to perform 2
-    // calls, and because the     // length of the list returned by
-    // libc::getsockopt is returned by mutating the length     // argument,
-    // which our implementation of getsockopt forbids. }
 
     /// `NETLINK_BROADCAST_ERROR` (since Linux 2.6.30). When not set,
     /// `netlink_broadcast()` only reports `ESRCH` errors and silently
