@@ -2,7 +2,7 @@
 
 use std::{
     io,
-    os::unix::io::{AsFd, AsRawFd, BorrowedFd, FromRawFd, RawFd},
+    os::unix::io::{AsFd, AsRawFd, BorrowedFd, RawFd},
     task::{Context, Poll, ready},
 };
 
@@ -14,30 +14,6 @@ use crate::{AsyncSocket, Socket, SocketAddr};
 
 /// An I/O object representing a Netlink socket.
 pub struct SmolSocket(Async<Socket>);
-
-impl FromRawFd for SmolSocket {
-    /// # Safety
-    ///
-    /// `fd` must be an open netlink socket file descriptor. Ownership of `fd`
-    /// is transferred to the returned `SmolSocket`, which will close it on
-    /// drop. The caller must not use or close `fd` afterwards.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the socket cannot be set non-blocking or registered with the
-    /// async-io reactor, because `FromRawFd` cannot return an error.
-    unsafe fn from_raw_fd(fd: RawFd) -> Self {
-        // SAFETY: The caller of `from_raw_fd` guarantees that `fd` is a
-        // valid, open file descriptor and transfers ownership of it to us.
-        let socket = unsafe { Socket::from_raw_fd(fd) };
-        // `Async::new` puts the socket in non-blocking mode and registers it
-        // with the reactor.
-        SmolSocket(Async::new(socket).expect(
-            "failed to set non-blocking mode or register netlink socket \
-                 with async-io",
-        ))
-    }
-}
 
 impl AsRawFd for SmolSocket {
     fn as_raw_fd(&self) -> RawFd {
@@ -95,21 +71,6 @@ impl SmolSocket {
 impl AsyncSocket for SmolSocket {
     fn socket_ref(&self) -> &Socket {
         self.0.get_ref()
-    }
-
-    /// Mutable access to the underlying [`Socket`].
-    ///
-    /// # Safety
-    ///
-    /// The socket is registered with the async-io reactor. Do not drop or
-    /// replace it through the returned reference
-    /// (`async_io::Async::get_mut` requires that the inner I/O source is not
-    /// dropped through the reference).
-    unsafe fn socket_mut(&mut self) -> &mut Socket {
-        // SAFETY: The caller of this `unsafe fn` guarantees that the inner
-        // I/O source is not dropped or replaced through the returned
-        // reference, as required by `Async::get_mut`.
-        unsafe { self.0.get_mut() }
     }
 
     fn new(protocol: isize) -> io::Result<Self> {

@@ -2,7 +2,7 @@
 
 use std::{
     io,
-    os::unix::io::{AsRawFd, FromRawFd, RawFd},
+    os::unix::io::{AsRawFd, RawFd},
     task::{Context, Poll, ready},
 };
 
@@ -14,33 +14,6 @@ use crate::{AsyncSocket, Socket, SocketAddr};
 /// An I/O object representing a Netlink socket.
 pub struct TokioSocket(AsyncFd<Socket>);
 
-impl FromRawFd for TokioSocket {
-    /// # Safety
-    ///
-    /// `fd` must be an open netlink socket file descriptor. Ownership of `fd`
-    /// is transferred to the returned `TokioSocket`, which will close it on
-    /// drop. The caller must not use or close `fd` afterwards.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the socket cannot be set non-blocking or registered with the
-    /// current Tokio runtime, because `FromRawFd` cannot return an error.
-    unsafe fn from_raw_fd(fd: RawFd) -> Self {
-        // SAFETY: The caller of `from_raw_fd` guarantees that `fd` is a
-        // valid, open file descriptor and transfers ownership of it to us.
-        let socket = unsafe { Socket::from_raw_fd(fd) };
-        socket
-            .set_nonblocking(true)
-            .expect("failed to set netlink socket non-blocking");
-        // SAFETY: `socket` owns a valid open netlink fd and keeps it open and
-        // unchanged for the lifetime of the `AsyncFd`.
-        TokioSocket(
-            unsafe { AsyncFd::register(socket) }
-                .expect("failed to register netlink socket with tokio"),
-        )
-    }
-}
-
 impl AsRawFd for TokioSocket {
     fn as_raw_fd(&self) -> RawFd {
         self.0.get_ref().as_raw_fd()
@@ -50,17 +23,6 @@ impl AsRawFd for TokioSocket {
 impl AsyncSocket for TokioSocket {
     fn socket_ref(&self) -> &Socket {
         self.0.get_ref()
-    }
-
-    /// Mutable access to the underlying [`Socket`].
-    ///
-    /// # Safety
-    ///
-    /// The returned socket must not be dropped or replaced, and its file
-    /// descriptor must not be closed or changed; the fd must remain the same
-    /// for the lifetime of the Tokio registration.
-    unsafe fn socket_mut(&mut self) -> &mut Socket {
-        self.0.get_mut()
     }
 
     fn new(protocol: isize) -> io::Result<Self> {

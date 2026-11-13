@@ -4,7 +4,7 @@ use std::{
     io::{Error, ErrorKind, Result},
     mem,
     os::{
-        fd::{AsFd, BorrowedFd, FromRawFd, IntoRawFd},
+        fd::{AsFd, BorrowedFd, IntoRawFd},
         unix::io::{AsRawFd, RawFd},
     },
 };
@@ -107,17 +107,6 @@ impl IntoRawFd for Socket {
         let fd = self.0;
         std::mem::forget(self);
         fd
-    }
-}
-
-impl FromRawFd for Socket {
-    /// # Safety
-    ///
-    /// `fd` must be an open netlink socket file descriptor. Ownership of `fd`
-    /// is transferred to the returned `Socket`, which will close it on drop.
-    /// The caller must not use or close `fd` afterwards.
-    unsafe fn from_raw_fd(fd: RawFd) -> Self {
-        Socket(fd)
     }
 }
 
