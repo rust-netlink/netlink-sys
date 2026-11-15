@@ -1,4 +1,15 @@
 # Changelog
+## [1.0.0-rc2] - 2026-11-15
+### Breaking changes
+ - Simplify `Socket` ownership with `OwnedFd`. (05a5afd)
+ - API break: remove unsafe public API. (10b3523)
+
+### New features
+ - N/A
+
+### Bug fixes
+ - deps: make log optional. (5afac75)
+
 ## [1.0.0-rc1] - 2026-11-11
 ### Breaking changes
  - API break: Drop Clone for Socket. (c71db75)
