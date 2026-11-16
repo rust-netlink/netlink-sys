@@ -25,7 +25,7 @@ use netlink_packet_core::{
     NLM_F_ACK, NLM_F_REQUEST, NetlinkBuffer, NetlinkMessage,
 };
 
-use netlink_sys::{AsyncSocket, AsyncSocketExt, AsyncRtSocket, SocketAddr};
+use netlink_sys::{AsyncRtSocket, AsyncSocket, AsyncSocketExt, SocketAddr};
 
 const NETLINK_AUDIT: isize = libc::NETLINK_AUDIT as isize;
 const AUDIT_STATUS_ENABLED: u32 = 1;

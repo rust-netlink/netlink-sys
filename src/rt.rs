@@ -129,7 +129,7 @@ impl AsyncSocket for AsyncRtSocket {
 mod tests {
     use libc::NETLINK_ROUTE;
 
-    use crate::{AsyncSocket, AsyncSocketExt, AsyncRtSocket, SocketAddr};
+    use crate::{AsyncRtSocket, AsyncSocket, AsyncSocketExt, SocketAddr};
     use netlink_packet_core::{
         NLM_F_DUMP, NLM_F_REQUEST, NetlinkHeader, NetlinkMessage,
         NetlinkPayload,
