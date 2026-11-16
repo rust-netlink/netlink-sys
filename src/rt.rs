@@ -12,16 +12,18 @@ use log::trace;
 
 use crate::{AsyncSocket, Socket, SocketAddr};
 
-/// An I/O object representing a Netlink socket.
-pub struct SmolSocket(Async<Socket>);
+/// An I/O object representing a Netlink socket. Any runtime that
+/// drives the `async-io` reactor can be used; `compio`, `glommio` &
+/// `monoio` are currently tested.
+pub struct RtAsyncSocket(Async<Socket>);
 
-impl AsRawFd for SmolSocket {
+impl AsRawFd for RtAsyncSocket {
     fn as_raw_fd(&self) -> RawFd {
         self.0.get_ref().as_raw_fd()
     }
 }
 
-impl AsFd for SmolSocket {
+impl AsFd for RtAsyncSocket {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.0.get_ref().as_fd()
     }
@@ -30,7 +32,7 @@ impl AsFd for SmolSocket {
 // async_io::Async<..>::{read,write}_with[_mut] functions try IO first,
 // and only register context if it would block.
 // replicate this in these poll functions:
-impl SmolSocket {
+impl RtAsyncSocket {
     fn poll_write_with<F, R>(
         &self,
         cx: &mut Context<'_>,
@@ -68,7 +70,7 @@ impl SmolSocket {
     }
 }
 
-impl AsyncSocket for SmolSocket {
+impl AsyncSocket for RtAsyncSocket {
     fn socket_ref(&self) -> &Socket {
         self.0.get_ref()
     }
@@ -132,12 +134,12 @@ mod tests {
     };
     use netlink_packet_route::{link::LinkMessage, RouteNetlinkMessage};
     use crate::{
-        AsyncSocket, AsyncSocketExt, SmolSocket, SocketAddr,
+        AsyncSocket, AsyncSocketExt, RtAsyncSocket, SocketAddr,
     };
 
     async fn dump_links() -> Option<LinkMessage> {
         let socket =
-            SmolSocket::new(NETLINK_ROUTE as isize).expect("failed to create SmolSocket");
+            RtAsyncSocket::new(NETLINK_ROUTE as isize).expect("failed to create SmolSocket");
 
         let local_addr = socket
             .socket_ref()
