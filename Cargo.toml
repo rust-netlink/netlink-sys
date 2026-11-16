@@ -44,6 +44,7 @@ smol_socket = ["async-io", "dep:log"]
 [dev-dependencies]
 compio = { version = "0.19.2", features = ["macros"] }
 glommio = "0.9.0"
+monoio = "0.2.4"
 netlink-packet-audit = "0.7.0"
 netlink-packet-core = "0.9.0"
 netlink-packet-route = "0.34.0"

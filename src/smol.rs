@@ -234,4 +234,8 @@ mod tests {
         });
     }
 
+    #[monoio::test]
+    async fn test_monoio() {
+        assert!(dump_links().await.is_some());
+    }
 }
