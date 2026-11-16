@@ -36,7 +36,7 @@ optional = true
 version = "2"
 
 [features]
-default = []
+default = ["smol_socket"]
 mio_socket = ["mio"]
 tokio_socket = ["tokio", "dep:log"]
 smol_socket = ["async-io", "dep:log"]
@@ -44,6 +44,8 @@ smol_socket = ["async-io", "dep:log"]
 [dev-dependencies]
 netlink-packet-audit = "0.7.0"
 netlink-packet-core = "0.9.0"
+netlink-packet-route = "0.34.0"
+smol = "2.0.2"
 
 [dev-dependencies.tokio]
 version = "1.54"
