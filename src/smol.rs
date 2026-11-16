@@ -221,4 +221,8 @@ mod tests {
         assert!(smol::block_on(dump_links()).is_some());
     }
 
+    #[compio::test]
+    async fn test_compio() {
+        assert!(dump_links().await.is_some());
+    }
 }
