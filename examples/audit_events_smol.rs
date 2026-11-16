@@ -13,7 +13,7 @@
 // ../target/debug/examples/audit_events_smol
 // ```
 //
-// This example uses `RtAsyncSocket` (backed by `async-io`) with the
+// This example uses `AsyncRtSocket` (backed by `async-io`) with the
 // smol runtime. Any runtime that drives the `async-io` reactor can be
 // used; `compio`, `glommio` & `monoio` are currently tested. See
 // `src/rt.rs` for details.
@@ -25,7 +25,7 @@ use netlink_packet_core::{
     NLM_F_ACK, NLM_F_REQUEST, NetlinkBuffer, NetlinkMessage,
 };
 
-use netlink_sys::{AsyncSocket, AsyncSocketExt, RtAsyncSocket, SocketAddr};
+use netlink_sys::{AsyncSocket, AsyncSocketExt, AsyncRtSocket, SocketAddr};
 
 const NETLINK_AUDIT: isize = libc::NETLINK_AUDIT as isize;
 const AUDIT_STATUS_ENABLED: u32 = 1;
@@ -34,7 +34,7 @@ const AUDIT_STATUS_PID: u32 = 4;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     smol::block_on(async {
         let kernel_unicast: SocketAddr = SocketAddr::new(0, 0);
-        let socket = RtAsyncSocket::new(NETLINK_AUDIT)?;
+        let socket = AsyncRtSocket::new(NETLINK_AUDIT)?;
 
         let mut status = StatusMessage::new();
         status.enabled = 1;

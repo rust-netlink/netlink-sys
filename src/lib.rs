@@ -6,7 +6,7 @@
 //! netlink, along with optional async integrations:
 //!
 //! - `TokioSocket` behind the `tokio_socket` feature.
-//! - `RtAsyncSocket` behind the `rt_socket` feature.
+//! - `AsyncRtSocket` behind the `rt_socket` feature.
 //! - [`mio::event::Source`](https://docs.rs/mio/latest/mio/event/trait.Source.html)
 //!   support for [`Socket`] behind the `mio_socket` feature.
 //!
@@ -36,11 +36,11 @@ pub use self::tokio::TokioSocket;
 #[cfg(feature = "rt_socket")]
 mod rt;
 #[cfg(feature = "rt_socket")]
-pub use self::rt::RtAsyncSocket;
+pub use self::rt::AsyncRtSocket;
 
 #[cfg(feature = "rt_socket")]
-#[deprecated(since = "1.0.0", note = "Use RtAsyncSocket instead")]
-pub use self::rt::RtAsyncSocket as SmolSocket;
+#[deprecated(since = "1.0.0", note = "Use AsyncRtSocket instead")]
+pub use self::rt::AsyncRtSocket as SmolSocket;
 
 #[cfg(feature = "mio_socket")]
 mod mio;

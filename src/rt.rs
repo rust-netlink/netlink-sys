@@ -15,15 +15,15 @@ use crate::{AsyncSocket, Socket, SocketAddr};
 /// An I/O object representing a Netlink socket. Any runtime that
 /// drives the `async-io` reactor can be used; `compio`, `glommio` &
 /// `monoio` are currently tested.
-pub struct RtAsyncSocket(Async<Socket>);
+pub struct AsyncRtSocket(Async<Socket>);
 
-impl AsRawFd for RtAsyncSocket {
+impl AsRawFd for AsyncRtSocket {
     fn as_raw_fd(&self) -> RawFd {
         self.0.get_ref().as_raw_fd()
     }
 }
 
-impl AsFd for RtAsyncSocket {
+impl AsFd for AsyncRtSocket {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.0.get_ref().as_fd()
     }
@@ -32,7 +32,7 @@ impl AsFd for RtAsyncSocket {
 // async_io::Async<..>::{read,write}_with[_mut] functions try IO first,
 // and only register context if it would block.
 // replicate this in these poll functions:
-impl RtAsyncSocket {
+impl AsyncRtSocket {
     fn poll_write_with<F, R>(
         &self,
         cx: &mut Context<'_>,
@@ -70,7 +70,7 @@ impl RtAsyncSocket {
     }
 }
 
-impl AsyncSocket for RtAsyncSocket {
+impl AsyncSocket for AsyncRtSocket {
     fn socket_ref(&self) -> &Socket {
         self.0.get_ref()
     }
@@ -129,7 +129,7 @@ impl AsyncSocket for RtAsyncSocket {
 mod tests {
     use libc::NETLINK_ROUTE;
 
-    use crate::{AsyncSocket, AsyncSocketExt, RtAsyncSocket, SocketAddr};
+    use crate::{AsyncSocket, AsyncSocketExt, AsyncRtSocket, SocketAddr};
     use netlink_packet_core::{
         NLM_F_DUMP, NLM_F_REQUEST, NetlinkHeader, NetlinkMessage,
         NetlinkPayload,
@@ -137,13 +137,13 @@ mod tests {
     use netlink_packet_route::{RouteNetlinkMessage, link::LinkMessage};
 
     async fn dump_links() -> Option<LinkMessage> {
-        let socket = RtAsyncSocket::new(NETLINK_ROUTE as isize)
-            .expect("failed to create RtAsyncSocket");
+        let socket = AsyncRtSocket::new(NETLINK_ROUTE as isize)
+            .expect("failed to create AsyncRtSocket");
 
         let local_addr = socket
             .socket_ref()
             .bind_auto()
-            .expect("failed to bind RtAsyncSocket");
+            .expect("failed to bind AsyncRtSocket");
 
         assert_ne!(local_addr.port_number(), 0);
 
