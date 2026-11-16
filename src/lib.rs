@@ -38,9 +38,5 @@ mod rt;
 #[cfg(feature = "rt_socket")]
 pub use self::rt::AsyncRtSocket;
 
-#[cfg(feature = "rt_socket")]
-#[deprecated(since = "1.0.0", note = "Use AsyncRtSocket instead")]
-pub use self::rt::AsyncRtSocket as SmolSocket;
-
 #[cfg(feature = "mio_socket")]
 mod mio;
