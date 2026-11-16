@@ -58,10 +58,6 @@ default-features = false
 # We only depend on tokio for AsyncFd
 features = ["net", "macros", "rt-multi-thread"]
 
-[dev-dependencies.async-std]
-version = "1.13"
-features = ["attributes"]
-
 
 [[example]]
 name = "audit_events"
