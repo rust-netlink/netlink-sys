@@ -129,17 +129,16 @@ impl AsyncSocket for RtAsyncSocket {
 mod tests {
     use libc::NETLINK_ROUTE;
 
+    use crate::{AsyncSocket, AsyncSocketExt, RtAsyncSocket, SocketAddr};
     use netlink_packet_core::{
-        NetlinkHeader, NetlinkMessage, NetlinkPayload, NLM_F_DUMP, NLM_F_REQUEST,
+        NLM_F_DUMP, NLM_F_REQUEST, NetlinkHeader, NetlinkMessage,
+        NetlinkPayload,
     };
-    use netlink_packet_route::{link::LinkMessage, RouteNetlinkMessage};
-    use crate::{
-        AsyncSocket, AsyncSocketExt, RtAsyncSocket, SocketAddr,
-    };
+    use netlink_packet_route::{RouteNetlinkMessage, link::LinkMessage};
 
     async fn dump_links() -> Option<LinkMessage> {
-        let socket =
-            RtAsyncSocket::new(NETLINK_ROUTE as isize).expect("failed to create SmolSocket");
+        let socket = RtAsyncSocket::new(NETLINK_ROUTE as isize)
+            .expect("failed to create SmolSocket");
 
         let local_addr = socket
             .socket_ref()
@@ -150,7 +149,9 @@ mod tests {
 
         let mut packet = NetlinkMessage::new(
             NetlinkHeader::default(),
-            NetlinkPayload::from(RouteNetlinkMessage::GetLink(LinkMessage::default())),
+            NetlinkPayload::from(RouteNetlinkMessage::GetLink(
+                LinkMessage::default(),
+            )),
         );
         packet.header.flags = NLM_F_DUMP | NLM_F_REQUEST;
         packet.header.sequence_number = 1;
@@ -192,7 +193,9 @@ mod tests {
                 assert!(packet_len > 0);
 
                 match rx_packet.payload {
-                    NetlinkPayload::InnerMessage(RouteNetlinkMessage::NewLink(link)) => {
+                    NetlinkPayload::InnerMessage(
+                        RouteNetlinkMessage::NewLink(link),
+                    ) => {
                         links.push(link);
                     }
                     NetlinkPayload::Done(_) => {
@@ -211,7 +214,8 @@ mod tests {
 
         assert!(!links.is_empty(), "expected at least one link");
 
-        let lo = links.into_iter()
+        let lo = links
+            .into_iter()
             .filter(|link| link.header.index == 1)
             .next()
             .expect("Expect loopback link with index 1");
@@ -230,7 +234,10 @@ mod tests {
 
     #[test]
     fn test_glommio() {
-        let ex = glommio::LocalExecutorBuilder::new(glommio::Placement::Fixed(0)).make().unwrap();
+        let ex =
+            glommio::LocalExecutorBuilder::new(glommio::Placement::Fixed(0))
+                .make()
+                .unwrap();
         ex.run(async move {
             assert!(dump_links().await.is_some());
         });

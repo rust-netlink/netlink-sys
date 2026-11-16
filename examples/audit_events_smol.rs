@@ -66,7 +66,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     nl_buf.set_length(n as u32);
                 }
             }
-            let parsed = NetlinkMessage::<AuditMessage>::deserialize(&buf[..n])?;
+            let parsed =
+                NetlinkMessage::<AuditMessage>::deserialize(&buf[..n])?;
             println!("<<< {:?}", parsed);
         }
     })
