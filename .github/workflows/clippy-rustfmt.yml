@@ -33,7 +33,7 @@ jobs:
           - default
           - mio_socket
           - tokio_socket
-          - smol_socket
+          - rt_socket
 
     steps:
       - uses: actions/checkout@v4
