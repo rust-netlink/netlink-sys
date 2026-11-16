@@ -6,7 +6,7 @@
 //! netlink, along with optional async integrations:
 //!
 //! - `TokioSocket` behind the `tokio_socket` feature.
-//! - `SmolSocket` behind the `smol_socket` feature.
+//! - `RtAsyncSocket` behind the `rt_socket` feature.
 //! - [`mio::event::Source`](https://docs.rs/mio/latest/mio/event/trait.Source.html)
 //!   support for [`Socket`] behind the `mio_socket` feature.
 //!

@@ -138,12 +138,12 @@ mod tests {
 
     async fn dump_links() -> Option<LinkMessage> {
         let socket = RtAsyncSocket::new(NETLINK_ROUTE as isize)
-            .expect("failed to create SmolSocket");
+            .expect("failed to create RtAsyncSocket");
 
         let local_addr = socket
             .socket_ref()
             .bind_auto()
-            .expect("failed to bind SmolSocket");
+            .expect("failed to bind RtAsyncSocket");
 
         assert_ne!(local_addr.port_number(), 0);
 

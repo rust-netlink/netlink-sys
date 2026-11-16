@@ -13,8 +13,8 @@
 // ../target/debug/examples/audit_events_smol
 // ```
 //
-// This example uses `SmolSocket` (backed by `async-io`) with the smol
-// runtime. Any runtime that drives the `async-io` reactor can be
+// This example uses `RtAsyncSocket` (backed by `async-io`) with the
+// smol runtime. Any runtime that drives the `async-io` reactor can be
 // used; `compio`, `glommio` & `monoio` are currently tested. See
 // `src/rt.rs` for details.
 
