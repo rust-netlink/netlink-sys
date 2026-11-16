@@ -225,4 +225,13 @@ mod tests {
     async fn test_compio() {
         assert!(dump_links().await.is_some());
     }
+
+    #[test]
+    fn test_glommio() {
+        let ex = glommio::LocalExecutorBuilder::new(glommio::Placement::Fixed(0)).make().unwrap();
+        ex.run(async move {
+            assert!(dump_links().await.is_some());
+        });
+    }
+
 }
