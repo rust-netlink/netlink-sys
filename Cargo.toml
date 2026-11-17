@@ -3,12 +3,12 @@ authors = ["Corentin Henry <corentinhenry@gmail.com>"]
 name = "netlink-sys"
 version = "1.0.0-rc2"
 edition = "2024"
-rust-version = "1.85"
 keywords = ["netlink", "ip", "linux"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/rust-netlink/netlink-sys"
 description = "netlink sockets, with optional integration with tokio"
+rust-version = "1.95"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -39,21 +39,22 @@ version = "2"
 default = []
 mio_socket = ["mio"]
 tokio_socket = ["tokio", "dep:log"]
-smol_socket = ["async-io", "dep:log"]
+rt_socket = ["async-io", "dep:log"]
 
 [dev-dependencies]
+compio = { version = "0.19.2", features = ["macros"] }
+glommio-ng = "0.12.0"
+monoio = "0.2.4"
 netlink-packet-audit = "0.7.0"
 netlink-packet-core = "0.9.0"
+netlink-packet-route = "0.34.0"
+smol = "2.0.2"
 
 [dev-dependencies.tokio]
 version = "1.54"
 default-features = false
 # We only depend on tokio for AsyncFd
 features = ["net", "macros", "rt-multi-thread"]
-
-[dev-dependencies.async-std]
-version = "1.13"
-features = ["attributes"]
 
 
 [[example]]
@@ -69,4 +70,4 @@ required-features = ["tokio_socket"]
 
 [[example]]
 name = "audit_events_smol"
-required-features = ["smol_socket"]
+required-features = ["rt_socket"]

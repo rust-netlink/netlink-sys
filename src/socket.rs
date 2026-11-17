@@ -173,7 +173,7 @@ impl Socket {
         Ok(())
     }
 
-    // when building with --features smol we don't need this
+    // when building with --features rt_socket we don't need this
     #[allow(dead_code)]
     /// Make this socket non-blocking
     pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
