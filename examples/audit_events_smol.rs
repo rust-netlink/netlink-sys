@@ -4,7 +4,7 @@
 //
 // ```
 // cd netlink-sys
-// cargo build --example audit_events_smol --features rg_socket
+// cargo build --example audit_events_smol --features rt_socket
 // ```
 //
 // Run *as root*:

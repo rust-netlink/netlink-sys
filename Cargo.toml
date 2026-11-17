@@ -40,8 +40,6 @@ default = []
 mio_socket = ["mio"]
 tokio_socket = ["tokio", "dep:log"]
 rt_socket = ["async-io", "dep:log"]
-# Deprecated; use rt_socket
-smol_socket = ["rt_socket"]
 
 [dev-dependencies]
 compio = { version = "0.19.2", features = ["macros"] }
