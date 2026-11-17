@@ -216,8 +216,7 @@ mod tests {
 
         let lo = links
             .into_iter()
-            .filter(|link| link.header.index == 1)
-            .next()
+            .find(|link| link.header.index == 1)
             .expect("Expect loopback link with index 1");
         Some(lo)
     }
@@ -234,10 +233,11 @@ mod tests {
 
     #[test]
     fn test_glommio() {
-        let ex =
-            glommio_ng::LocalExecutorBuilder::new(glommio_ng::Placement::Fixed(0))
-                .make()
-                .unwrap();
+        let ex = glommio_ng::LocalExecutorBuilder::new(
+            glommio_ng::Placement::Fixed(0),
+        )
+        .make()
+        .unwrap();
         ex.run(async move {
             assert!(dump_links().await.is_some());
         });
