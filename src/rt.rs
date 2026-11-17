@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn test_glommio() {
         let ex =
-            glommio::LocalExecutorBuilder::new(glommio::Placement::Fixed(0))
+            glommio_ng::LocalExecutorBuilder::new(glommio_ng::Placement::Fixed(0))
                 .make()
                 .unwrap();
         ex.run(async move {
